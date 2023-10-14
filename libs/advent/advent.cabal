@@ -1,0 +1,39 @@
+cabal-version:      2.4
+name:               advent
+version:            0.1.0.0
+synopsis:           Common Haskell utilities for Advent of Code solutions
+
+-- A longer description of the package.
+-- description:
+homepage:           https://github.com/bwbeach/advent-of-code
+
+-- A URL where users can report bugs.
+-- bug-reports:
+license:            MIT
+license-file:       LICENSE
+author:             Brian Beach
+maintainer:         coder@beachfamily.net
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files: CHANGELOG.md
+
+library
+    exposed-modules:  Advent
+
+    -- Modules included in this library but not exported.
+    -- other-modules:
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+    build-depends:    base ^>=4.16.4.0
+    hs-source-dirs:   src
+    default-language: Haskell2010
+
+test-suite advent-test
+    default-language: Haskell2010
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          AdventTest.hs
+    build-depends:    base ^>=4.16.4.0, advent
