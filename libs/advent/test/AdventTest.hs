@@ -1,6 +1,4 @@
 module Main (main) where
 
-import Advent (message)
-
 main :: IO ()
-main = putStrLn message
+main = putStrLn "Tests not implemented"

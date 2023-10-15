@@ -1,22 +1,11 @@
 module Main where
 
-import Advent (message)
-import Data.Bits (Bits (xor))
-import GHC.IO.Exception (IOException (ioe_filename))
+import Advent (runTestAndInput)
 
 main :: IO ()
-main = do
-  runInput "test.txt"
-  runInput "input.txt"
+main = runTestAndInput parse (solve 2) (solve 3)
 
-runInput :: String -> IO ()
-runInput fileName = do
-  putStrLn fileName
-  text <- readFile fileName
-  let input = parse text
-  print . solve 2 $ input
-  print . solve 3 $ input
-
+-- | Parses input for 2020 Day 01
 parse :: String -> [Int]
 parse = map read . lines
 
@@ -38,7 +27,7 @@ solve n =
 choose :: Int -> [a] -> [[a]]
 choose 0 _ = [[]]
 choose _ [] = []
-choose n (x : xs) = [x : ys | ys <- choose (n - 1) xs] ++ choose n xs
+choose n (x : xs) = map (x :) (choose (n - 1) xs) ++ choose n xs
 
 -- | Returns the contents if a singleton list.
 --
