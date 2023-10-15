@@ -21,23 +21,19 @@ parse :: String -> [Int]
 parse = map read . lines
 
 part1 :: [Int] -> Int
-part1 xs =
-  a * b
-  where
-    possible = crossProduct xs xs
-    theOne = filter sumsTo2020 possible
-    sumsTo2020 (a, b) = a + b == 2020
-    (a, b) = head theOne
+part1 = solve 2
 
 part2 :: [Int] -> Int
-part2 xs =
-  a * b * c
-  where
-    possible = [(a, b, c) | a <- xs, b <- xs, c <- xs]
-    theOne = filter sumsTo2020 possible
-    sumsTo2020 (a, b, c) = a + b + c == 2020
-    (a, b, c) = head theOne
+part2 = solve 3
 
-crossProduct :: [a] -> [b] -> [(a, b)]
-crossProduct as bs =
-  [(a, b) | a <- as, b <- bs]
+solve :: Int -> [Int] -> Int
+solve n xs = theOne [product ys | ys <- choose n xs, sum ys == 2020]
+
+choose :: Int -> [Int] -> [[Int]]
+choose 0 _ = [[]]
+choose _ [] = []
+choose n (x : xs) = [x : ys | ys <- choose (n - 1) xs] ++ choose n xs
+
+theOne :: (Show a) => [a] -> a
+theOne [a] = a
+theOne as = error ("expected exactly one: " ++ show as)
