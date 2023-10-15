@@ -14,26 +14,35 @@ runInput fileName = do
   putStrLn fileName
   text <- readFile fileName
   let input = parse text
-  print . part1 $ input
-  print . part2 $ input
+  print . solve 2 $ input
+  print . solve 3 $ input
 
 parse :: String -> [Int]
 parse = map read . lines
 
-part1 :: [Int] -> Int
-part1 = solve 2
-
-part2 :: [Int] -> Int
-part2 = solve 3
-
+-- | Solves 2020 Day 01
+--
+-- The strategy is to generate all ways to choose n numbers from the
+-- list, then filter down to the one set that adds up to 2020.
 solve :: Int -> [Int] -> Int
-solve n xs = theOne [product ys | ys <- choose n xs, sum ys == 2020]
+solve n =
+  product . only . filter sumIs2020 . choose n
+  where
+    sumIs2020 = (== 2020) . sum
 
-choose :: Int -> [Int] -> [[Int]]
+-- | Returns combinations of n items from the list
+--
+-- Preserves the order of the items in the list, and does not
+-- return duplicates that are the same items in a different
+-- order.
+choose :: Int -> [a] -> [[a]]
 choose 0 _ = [[]]
 choose _ [] = []
 choose n (x : xs) = [x : ys | ys <- choose (n - 1) xs] ++ choose n xs
 
-theOne :: (Show a) => [a] -> a
-theOne [a] = a
-theOne as = error ("expected exactly one: " ++ show as)
+-- | Returns the contents if a singleton list.
+--
+-- It's an error if the length of the list is not 1.
+only :: (Show a) => [a] -> a
+only [a] = a
+only as = error ("expected exactly one: " ++ show as)
