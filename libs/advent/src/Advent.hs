@@ -1,8 +1,10 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
 module Advent
-  ( gridEmpty,
+  ( Grid (..),
+    gridEmpty,
     gridMap,
+    gridParse,
     runTestAndInput,
   )
 where
@@ -31,14 +33,25 @@ runTestAndInput parse part1 part2 = do
 --
 -- A grid is stored as a map from position to non-space character at
 -- that position.
-newtype Grid = Grid (M.Map (V2 Int) Char) deriving (Eq)
+newtype Grid = Grid (M.Map (V2 Int) Char) deriving (Eq, Show, Read)
 
+-- | An empty grid, with no cells filled.
 gridEmpty :: Grid
 gridEmpty = Grid M.empty
 
 -- | Extracts the map from a Grid
 gridMap :: Grid -> M.Map (V2 Int) Char
 gridMap (Grid m) = m
+
+-- | Grids are read one row per line, ignoring spaces.
+gridParse :: String -> Grid
+gridParse =
+  Grid . M.fromList . concat . zipWith parseLine [1 ..] . lines
+  where
+    parseLine y line = concat $ zipWith (parseOne y) [1 ..] line
+
+    parseOne y x ' ' = []
+    parseOne x y c = [(V2 x y, c)]
 
 -- instance Show Grid where
 --  shows g _ = "g"
