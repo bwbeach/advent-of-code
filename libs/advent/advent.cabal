@@ -38,4 +38,4 @@ test-suite advent-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          AdventTest.hs
-    build-depends:    base ^>=4.16.4.0, advent, HUnit
+    build-depends:    base ^>=4.16.4.0, advent, HUnit, containers

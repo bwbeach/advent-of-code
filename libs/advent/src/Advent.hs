@@ -1,6 +1,11 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
-module Advent (runTestAndInput) where
+module Advent
+  ( gridEmpty,
+    gridMap,
+    runTestAndInput,
+  )
+where
 
 import Data.Map.Strict qualified as M
 import Linear.V2 (V2 (..))
@@ -27,6 +32,9 @@ runTestAndInput parse part1 part2 = do
 -- A grid is stored as a map from position to non-space character at
 -- that position.
 newtype Grid = Grid (M.Map (V2 Int) Char) deriving (Eq)
+
+gridEmpty :: Grid
+gridEmpty = Grid M.empty
 
 -- | Extracts the map from a Grid
 gridMap :: Grid -> M.Map (V2 Int) Char
