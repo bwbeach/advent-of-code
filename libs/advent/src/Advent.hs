@@ -7,6 +7,7 @@ module Advent
     gridFormat,
     gridMap,
     gridParse,
+    run,
     runTestAndInput,
   )
 where
@@ -15,11 +16,12 @@ import Data.Map.Strict qualified as M
 import Data.Maybe (fromMaybe)
 import Linear.V2 (V2 (..))
 
--- | Runs a solution for bath parts of one day against both test and input files.
-runTestAndInput :: (Show b) => (String -> a) -> (a -> b) -> (a -> b) -> IO ()
-runTestAndInput parse part1 part2 = do
-  runFile "test.txt"
-  runFile "input.txt"
+-- | Runs a solution on a list of input files.
+run :: (Show b) => (String -> a) -> (a -> b) -> (a -> b) -> [String] -> IO ()
+run _ _ _ [] = pure ()
+run parse part1 part2 (f : fs) = do
+  runFile f
+  run parse part1 part2 fs
   where
     runFile fileName = do
       putStrLn fileName
@@ -27,6 +29,11 @@ runTestAndInput parse part1 part2 = do
       let input = parse text
       print . part1 $ input
       print . part2 $ input
+
+-- | Runs a solution for bath parts of one day against both test and input files.
+runTestAndInput :: (Show b) => (String -> a) -> (a -> b) -> (a -> b) -> IO ()
+runTestAndInput parse part1 part2 = do
+  run parse part1 part2 ["test.txt", "input.txt"]
 
 -- | A grid of characters.
 --
