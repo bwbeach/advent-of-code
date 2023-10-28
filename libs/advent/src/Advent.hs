@@ -45,10 +45,10 @@ gridEmpty = Grid M.empty
 gridMap :: Grid -> M.Map (V2 Int) Char
 gridMap (Grid m) = m
 
--- | Bounds of a grid
-gridBounds :: Grid -> (Int, Int, Int, Int)
+-- | Bounds of a grid: upper left corner and lower right corner
+gridBounds :: Grid -> (V2 Int, V2 Int)
 gridBounds (Grid m) =
-  (minimum xs, maximum xs, minimum ys, maximum ys)
+  (V2 (minimum xs) (minimum ys), V2 (maximum xs) (maximum ys))
   where
     points = M.keys m
     xs = [x | (V2 x _) <- points]
@@ -69,15 +69,6 @@ gridFormat :: Grid -> String
 gridFormat (Grid m) =
   unlines $ map lineFormat [y0 .. y1]
   where
-    (x0, x1, y0, y1) = gridBounds (Grid m)
+    (V2 x0 y0, V2 x1 y1) = gridBounds (Grid m)
     lineFormat y = map (cellFormat y) [x0 .. x1]
     cellFormat y x = fromMaybe ' ' $ M.lookup (V2 x y) m
-
--- instance Show Grid where
---  shows g _ = "g"
-
--- | Converts lines of characters to a grid.
---
--- The grid is represented as a map from (V2 x y) to a non-space
--- character at that position.
--- instance Read Grid where
