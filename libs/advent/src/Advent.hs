@@ -3,6 +3,7 @@
 module Advent
   ( Grid (..),
     gridEmpty,
+    gridFormat,
     gridMap,
     gridParse,
     runTestAndInput,
@@ -10,6 +11,7 @@ module Advent
 where
 
 import Data.Map.Strict qualified as M
+import Data.Maybe (fromMaybe)
 import Linear.V2 (V2 (..))
 
 -- | Runs a solution for bath parts of one day against both test and input files.
@@ -43,15 +45,33 @@ gridEmpty = Grid M.empty
 gridMap :: Grid -> M.Map (V2 Int) Char
 gridMap (Grid m) = m
 
+-- | Bounds of a grid
+gridBounds :: Grid -> (Int, Int, Int, Int)
+gridBounds (Grid m) =
+  (minimum xs, maximum xs, minimum ys, maximum ys)
+  where
+    points = M.keys m
+    xs = [x | (V2 x _) <- points]
+    ys = [y | (V2 _ y) <- points]
+
 -- | Grids are read one row per line, ignoring spaces.
 gridParse :: String -> Grid
 gridParse =
   Grid . M.fromList . concat . zipWith parseLine [1 ..] . lines
   where
-    parseLine y line = concat $ zipWith (parseOne y) [1 ..] line
+    parseLine y = concat . zipWith (parseOne y) [1 ..]
 
     parseOne y x ' ' = []
     parseOne x y c = [(V2 x y, c)]
+
+-- | Formats a grid as a String
+gridFormat :: Grid -> String
+gridFormat (Grid m) =
+  unlines $ map lineFormat [y0 .. y1]
+  where
+    (x0, x1, y0, y1) = gridBounds (Grid m)
+    lineFormat y = map (cellFormat y) [x0 .. x1]
+    cellFormat y x = fromMaybe ' ' $ M.lookup (V2 x y) m
 
 -- instance Show Grid where
 --  shows g _ = "g"
