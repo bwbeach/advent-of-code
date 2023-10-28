@@ -2,6 +2,7 @@
 
 module Advent
   ( Grid (..),
+    gridBounds,
     gridEmpty,
     gridFormat,
     gridMap,
@@ -62,7 +63,7 @@ gridParse =
     parseLine y = concat . zipWith (parseOne y) [1 ..]
 
     parseOne y x ' ' = []
-    parseOne x y c = [(V2 x y, c)]
+    parseOne y x c = [(V2 x y, c)]
 
 -- | Formats a grid as a String
 gridFormat :: Grid -> String

@@ -2,7 +2,14 @@
 
 module Main (main) where
 
-import Advent (Grid (..), gridEmpty, gridFormat, gridMap, gridParse)
+import Advent
+  ( Grid (..),
+    gridBounds,
+    gridEmpty,
+    gridFormat,
+    gridMap,
+    gridParse,
+  )
 import Data.Map.Strict qualified as M
 import Linear.V2 (V2 (..))
 import System.Exit
@@ -16,16 +23,21 @@ main = do
 testGridEmpty :: Test
 testGridEmpty = TestCase (assertEqual "empty map" (gridMap gridEmpty) M.empty)
 
+testGridBounds :: Test
+testGridBounds =
+  TestCase (assertEqual "bounds" (V2 1 1, V2 3 2) (gridBounds . gridParse $ "a b\nc"))
+
 testGridParseFormat :: Test
 testGridParseFormat =
   TestCase (assertEqual "small grid" reformatted original)
   where
     reformatted = gridFormat grid
     grid = gridParse original
-    original = "a \n b\n"
+    original = "ab\n d\n"
 
 tests =
   TestList
     [ TestLabel "testGridEmpty" testGridEmpty,
+      TestLabel "testGridBounds" testGridBounds,
       TestLabel "testGridParse" testGridParseFormat
     ]
