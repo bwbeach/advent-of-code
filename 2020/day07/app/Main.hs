@@ -28,11 +28,9 @@ parseLine line =
     parseRhs s = map parseContent . splitOn "," $ s
 
     parseContent s =
-      (count, color)
+      (read count, bagColor . unwords $ rest)
       where
-        count = read (head ws)
-        color = unwords . take 2 . drop 1 $ ws
-        ws = words s
+        (count : rest) = words s
 
     [left, right] = splitOn " contain " line
 
