@@ -7,6 +7,7 @@ module Advent
     gridFormat,
     gridMap,
     gridParse,
+    only,
     run,
     runTestAndInput,
   )
@@ -17,7 +18,7 @@ import Data.Maybe (fromMaybe)
 import Linear.V2 (V2 (..))
 
 -- | Runs a solution on a list of input files.
-run :: (Show b) => (String -> a) -> (a -> b) -> (a -> b) -> [String] -> IO ()
+run :: (Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> [String] -> IO ()
 run _ _ _ [] = pure ()
 run parse part1 part2 (f : fs) = do
   runFile f
@@ -31,9 +32,16 @@ run parse part1 part2 (f : fs) = do
       print . part2 $ input
 
 -- | Runs a solution for bath parts of one day against both test and input files.
-runTestAndInput :: (Show b) => (String -> a) -> (a -> b) -> (a -> b) -> IO ()
+runTestAndInput :: (Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> IO ()
 runTestAndInput parse part1 part2 = do
   run parse part1 part2 ["test.txt", "input.txt"]
+
+-- | Returns the contents if a singleton list.
+--
+-- It's an error if the length of the list is not 1.
+only :: (Show a) => [a] -> a
+only [a] = a
+only as = error ("expected exactly one: " ++ show as)
 
 -- | A grid of characters.
 --
