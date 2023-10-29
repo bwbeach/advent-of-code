@@ -1,17 +1,19 @@
 module Main where
 
 import Advent (runTestAndInput)
+import Data.List.Split
+import qualified Data.Set as S
 
 main :: IO ()
 main = runTestAndInput parse part1 part2
 
-type Problem = String
+type Problem = [[String]]
 
 parse :: String -> Problem
-parse = id
+parse = map (endBy "\n") . splitOn "\n\n"
 
 part1 :: Problem -> Int
-part1 = length
+part1 = sum . map (S.size . S.fromList . concat)
 
 part2 :: Problem -> Int
 part2 = length
