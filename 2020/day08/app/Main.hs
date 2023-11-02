@@ -3,7 +3,7 @@ module Main where
 import Advent (runTestAndInput)
 import Data.List.Split (endBy)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isNothing)
 import qualified Data.Set as S
 import Debug.Trace
 
@@ -33,30 +33,44 @@ parse =
     parseNum ('+' : n) = read n
     parseNum n = read n
 
--- | The state of the computer is (addr, acc)
--- The addr is the next instruction to run, and the acc is the accumulator
--- just before running that instruction.
-type State = (Int, Int)
+-- | The state of the computer, including addresses of all instructions that have executed.
+data State = State
+  { pc :: Int,
+    acc :: Int,
+    history :: S.Set Int
+  }
+  deriving (Show)
 
 -- | Runs the next instruction, producing the new state.
 step :: Problem -> State -> State
-step problem (addr, acc) =
-  runInstruction . fromJust $ M.lookup addr problem
+step problem s =
+  runInstruction $ M.lookup (pc s) problem
   where
-    runInstruction (Acc n) = (addr + 1, acc + n)
-    runInstruction (Jmp n) = (addr + n, acc)
-    runInstruction (Nop _) = (addr + 1, acc)
+    runInstruction Nothing = s
+    runInstruction (Just (Acc n)) = s {pc = pc s + 1, acc = acc s + n, history = newHistory}
+    runInstruction (Just (Jmp n)) = s {pc = pc s + n, history = newHistory}
+    runInstruction (Just (Nop _)) = s {pc = pc s + 1, history = newHistory}
+
+    newHistory = S.insert (pc s) (history s)
+
+-- | The start state
+initialState :: State
+initialState = State {pc = 1, acc = 0, history = S.empty}
+
+-- | The sequence of all states the program goes through
+allStates :: Problem -> [State]
+allStates problem = iterate (step problem) initialState
+
+-- | Has a state looped?
+hasLooped :: State -> Bool
+hasLooped s = S.member (pc s) (history s)
+
+-- | Has a state halted?
+hasHalted :: Problem -> State -> Bool
+hasHalted problem s = isNothing $ M.lookup (pc s) problem
 
 part1 :: Problem -> Int
-part1 problem =
-  go S.empty (1, 0)
-  where
-    go visited (addr, acc) =
-      if S.member addr visited
-        then acc
-        else go (S.insert addr visited) (addr', acc')
-      where
-        (addr', acc') = step problem (addr, acc)
+part1 = acc . head . dropWhile (not . hasLooped) . allStates
 
 part2 :: Problem -> Int
 part2 = length
