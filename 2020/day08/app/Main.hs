@@ -13,7 +13,7 @@ main = runTestAndInput parse part1 part2
 data Instruction
   = Acc Int
   | Jmp Int
-  | Nop
+  | Nop Int
   deriving (Show)
 
 -- | Map from address to instruction at that address.
@@ -28,7 +28,7 @@ parse =
 
     parseWords ["acc", n] = Acc (parseNum n)
     parseWords ["jmp", n] = Jmp (parseNum n)
-    parseWords ["nop", _] = Nop
+    parseWords ["nop", n] = Nop (parseNum n)
 
     parseNum ('+' : n) = read n
     parseNum n = read n
@@ -45,7 +45,7 @@ step problem (addr, acc) =
   where
     runInstruction (Acc n) = (addr + 1, acc + n)
     runInstruction (Jmp n) = (addr + n, acc)
-    runInstruction Nop = (addr + 1, acc)
+    runInstruction (Nop _) = (addr + 1, acc)
 
 part1 :: Problem -> Int
 part1 problem =
