@@ -69,8 +69,28 @@ hasLooped s = S.member (pc s) (history s)
 hasHalted :: Problem -> State -> Bool
 hasHalted problem s = isNothing $ M.lookup (pc s) problem
 
+-- | Is the simulation done?
+isDone :: Problem -> State -> Bool
+isDone problem s = hasLooped s || hasHalted problem s
+
+-- | Run a problem from the initial state until it's done.
+run :: Problem -> State
+run p = head . dropWhile (not . isDone p) . allStates $ p
+
 part1 :: Problem -> Int
-part1 = acc . head . dropWhile (not . hasLooped) . allStates
+part1 = acc . run
 
 part2 :: Problem -> Int
-part2 = length
+part2 p =
+  acc . only . filter (hasHalted p) . map (run . corruptInstructionAt p) $ [1 .. lastAddr]
+  where
+    lastAddr = maximum (M.keys p)
+    only [x] = x
+
+corruptInstructionAt :: Problem -> Int -> Problem
+corruptInstructionAt p i = M.insert i (corruptInstruction . fromJust $ M.lookup i p) p
+
+corruptInstruction :: Instruction -> Instruction
+corruptInstruction (Acc n) = Acc n
+corruptInstruction (Jmp n) = Nop n
+corruptInstruction (Nop n) = Jmp n
