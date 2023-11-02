@@ -1,7 +1,11 @@
 module Main where
 
 import Advent (runTestAndInput)
-import Data.List.Split
+import qualified Data.Graph.Wrapper as G
+import Data.List.Split (endBy, splitOn)
+import qualified Data.Map.Strict as M
+import Data.Maybe (fromJust)
+import Data.Tuple.Extra (second)
 
 main :: IO ()
 main = runTestAndInput parse part1 part2
@@ -37,8 +41,27 @@ parseLine line =
     -- "bright red bags" -> "bright red"
     bagColor = unwords . take 2 . words
 
-part1 :: Problem -> Problem
-part1 = id
+part1 :: Problem -> Int
+part1 problem =
+  length . filter (/= "shiny gold") . G.reachableVertices g $ "shiny gold"
+  where
+    -- Graph with colors as nodes, and edges going from a bag to the colors that holds it
+    g = G.transpose . G.fromListSimple . map (second (map snd)) $ problem
 
+-- | How many bags are inside a shiny gold bag?
+-- ... one fewer than the total number of bags, including the shiny gold bag.
 part2 :: Problem -> Int
-part2 = length
+part2 problem =
+  bagCount (1, "shiny gold") - 1
+  where
+    -- How many total bags for n bags of color c?
+    bagCount :: (Int, Color) -> Int
+    bagCount (n, c) = n * (1 + sum (map bagCount (contentsOf c)))
+
+    -- the contents of a bag of the given color
+    contentsOf :: Color -> [(Int, Color)]
+    contentsOf c = fromJust $ M.lookup c colorToContents
+
+    -- a map from bag color to the contents of the bag
+    colorToContents :: M.Map Color [(Int, Color)]
+    colorToContents = M.fromList problem
