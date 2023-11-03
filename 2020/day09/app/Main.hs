@@ -8,25 +8,28 @@ import Data.List.Extra (notNull)
 main :: IO ()
 main = runTestAndInput parse part1 part2
 
-type Problem = [Int]
+type Problem = (Int, [Int])
 
-parse :: String -> [Int]
-parse = map read . lines
+parse :: String -> Problem
+parse s =
+  (head ns, tail ns)
+  where
+    ns = map read . lines $ s
 
 part1 :: Problem -> Int
-part1 =
-  fst . head . filter (not . uncurry hasPairThatSumsTo) . drop 5 . makeSequence
+part1 (bufferSize, ns) =
+  fst . head . filter (not . uncurry hasPairThatSumsTo) . drop bufferSize . makeSequence bufferSize $ ns
 
 part2 :: Problem -> Int
 part2 = length
 
 -- | Makes a sequence of (current, ringBuffer)
-makeSequence :: [a] -> [(a, [a])]
-makeSequence xs = zip xs (scanl (flip rbInsert) [] xs)
+makeSequence :: Int -> [a] -> [(a, [a])]
+makeSequence bufferSize xs = zip xs (scanl (flip (rbInsert bufferSize)) [] xs)
 
 -- | Inserts an item in a ring buffer
-rbInsert :: a -> [a] -> [a]
-rbInsert x rb = x : take 4 rb
+rbInsert :: Int -> a -> [a] -> [a]
+rbInsert bufferSize x rb = x : take (bufferSize - 1) rb
 
 -- | Is there a pair that sums to the given number?
 hasPairThatSumsTo :: Int -> [Int] -> Bool
