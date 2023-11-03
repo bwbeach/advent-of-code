@@ -3,7 +3,8 @@
 module Main where
 
 import Advent (runTestAndInput)
-import Data.List.Extra (notNull)
+import Data.List.Extra (notNull, tails)
+import Data.Maybe (mapMaybe)
 
 main :: IO ()
 main = runTestAndInput parse part1 part2
@@ -21,7 +22,22 @@ part1 (bufferSize, ns) =
   fst . head . filter (not . uncurry hasPairThatSumsTo) . drop bufferSize . makeSequence bufferSize $ ns
 
 part2 :: Problem -> Int
-part2 = length
+part2 problem =
+  minimum contiguous + maximum contiguous
+  where
+    p1 = part1 problem
+    contiguous = only . filter ((2 <=) . length) . mapMaybe (headThatAddsTo p1) . tails . snd $ problem
+
+    headThatAddsTo :: Int -> [Int] -> Maybe [Int]
+    headThatAddsTo 0 _ = Just []
+    headThatAddsTo _ [] = Nothing
+    headThatAddsTo n (x : xs) =
+      if x <= n
+        then (x :) <$> headThatAddsTo (n - x) xs
+        else Nothing
+
+    only [x] = x
+    only xs = error ("expected exactly one item in list: " ++ show xs)
 
 -- | Makes a sequence of (current, ringBuffer)
 makeSequence :: Int -> [a] -> [(a, [a])]
