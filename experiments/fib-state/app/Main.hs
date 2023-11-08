@@ -19,8 +19,8 @@ memoLookup k =
         Just v' -> (Just v', ms)
 
 -- | Store a result in the memo map.
-insert :: Int -> Integer -> MemoMonad ()
-insert k v =
+memoInsert :: Int -> Integer -> MemoMonad ()
+memoInsert k v =
   state (\ms -> ((), M.insert k v ms))
 
 memoize :: (Int -> MemoMonad Integer) -> Int -> MemoMonad Integer
@@ -29,13 +29,16 @@ memoize f n = do
   case maybeResult of
     Nothing -> do
       result <- f n
-      insert n result
+      memoInsert n result
       return result
     Just result -> do
       return result
 
+runMemoize m x =
+  runState (m x) M.empty
+
 fib2 :: Int -> MemoMonad Integer
-fib2 = do
+fib2 =
   memoize fib2'
   where
     fib2' n =
@@ -49,4 +52,4 @@ fib2 = do
 main :: IO ()
 main =
   do
-    print (runState (fib2 100) M.empty)
+    print (runMemoize fib2 100)
