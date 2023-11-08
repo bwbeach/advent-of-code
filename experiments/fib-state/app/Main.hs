@@ -3,27 +3,22 @@ module Main where
 import Control.Monad.State.Lazy
 import qualified Data.Map.Strict as M
 
--- | The memoization state for a Fibonacci calculation.
+-- | The memoization state that stores the already-computed answers.
 type Memo k v = M.Map k v
 
--- | The monad that has a MemoState and an Integer result
-type MemoMonad = State (Memo Int Integer)
-
-memoLookup :: Int -> MemoMonad (Maybe Integer)
+-- | Looks to see if an answer is in the memo.
+memoLookup :: (Ord k) => k -> State (Memo k v) (Maybe v)
 memoLookup k =
-  state lookup
-  where
-    lookup ms =
-      case M.lookup k ms of
-        Nothing -> (Nothing, ms)
-        Just v' -> (Just v', ms)
+  state (\ms -> (M.lookup k ms, ms))
 
--- | Store a result in the memo map.
-memoInsert :: Int -> Integer -> MemoMonad ()
+-- | Store an answer in the memo.
+memoInsert :: (Ord k) => k -> v -> State (Memo k v) ()
 memoInsert k v =
   state (\ms -> ((), M.insert k v ms))
 
-memoize :: (Int -> MemoMonad Integer) -> Int -> MemoMonad Integer
+-- | Wrap a monad and don't call it if we already have the answer.
+-- If we do call it, insert the answer in the state.
+memoize :: (Ord k) => (k -> State (Memo k v) v) -> k -> State (Memo k v) v
 memoize f n = do
   maybeResult <- memoLookup n
   case maybeResult of
@@ -34,23 +29,27 @@ memoize f n = do
     Just result -> do
       return result
 
-runMemoize :: (Int -> MemoMonad Integer) -> Int -> Integer
+-- | Run a memoized function.
+runMemoize :: (Ord k) => (k -> State (Memo k v) v) -> k -> v
 runMemoize m x =
   evalState (m x) M.empty
 
-fib2 :: Int -> MemoMonad Integer
-fib2 =
-  memoize fib2'
+fib :: Int -> Integer
+fib =
+  runMemoize fib'
   where
-    fib2' n =
-      if n < 2
-        then return 1
-        else do
-          a <- fib2 (n - 1)
-          b <- fib2 (n - 2)
-          return (a + b)
+    fib' =
+      memoize
+        ( \n ->
+            if n < 2
+              then return 1
+              else do
+                a <- fib' (n - 1)
+                b <- fib' (n - 2)
+                return (a + b)
+        )
 
 main :: IO ()
 main =
   do
-    print (runMemoize fib2 100)
+    print (fib 100)
