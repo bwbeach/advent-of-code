@@ -88,6 +88,35 @@ superSimple :: Int -> MemoMonad Integer
 superSimple n =
   insert n 5 >>= \a -> return 6
 
+remember :: (Int -> MemoMonad Integer) -> Int -> MemoMonad Integer
+remember f n = do
+  result <- f n
+  insert n result
+  return result
+
+memoize :: (Int -> MemoMonad Integer) -> Int -> MemoMonad Integer
+memoize f n = do
+  maybeResult <- memoLookup n
+  case maybeResult of
+    Nothing -> do
+      result <- f n
+      insert n result
+      return result
+    Just result -> do
+      return result
+
+fib2 :: Int -> MemoMonad Integer
+fib2 = do
+  memoize fib2'
+  where
+    fib2' n =
+      if n < 2
+        then return 1
+        else do
+          a <- fib2 (n - 1)
+          b <- fib2 (n - 2)
+          return (a + b)
+
 -- | Compute Fibonacci number
 fib :: Int -> MemoMonad Integer
 fib n = do
@@ -105,7 +134,26 @@ fib n = do
         Just result -> do
           return result
 
-x = runStateT
+type SimpleState = Int
+
+type SimpleMonad = State SimpleState
+
+-- postIncrement :: SimpleMonad Int
+postIncrement = state (\state -> (state, state + 1))
+
+-- simple :: Int -> SimpleMonad Int
+simple n = do
+  x <- postIncrement
+  return (x * n)
+
+simple2 :: Int -> SimpleMonad Int
+simple2 n = postIncrement >>= (\x -> return (x * n))
+
+go :: (Int, Int)
+go = runState (simple2 5) 2
+
+mymain :: IO ()
+mymain = print go
 
 main :: IO ()
 main =
@@ -118,3 +166,5 @@ main =
     print (evalState inc4 0) -- -4
     print (runState (superSimple 3) M.empty)
     print (runState (fib 100) M.empty)
+    print (runState (fib2 100) M.empty)
+    mymain
