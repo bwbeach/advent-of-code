@@ -4,7 +4,7 @@ import Control.Monad.State.Lazy
 import qualified Data.Map.Strict as M
 
 -- | The memoization state for a Fibonacci calculation.
-newtype Memo k v = Memo (M.Map k v)
+type Memo k v = M.Map k v
 
 -- | The monad that has a MemoState and an Integer result
 type MemoMonad = State (Memo Int Integer)
@@ -13,15 +13,15 @@ memoLookup :: Int -> MemoMonad (Maybe Integer)
 memoLookup k =
   state lookup
   where
-    lookup (Memo ms) =
+    lookup ms =
       case M.lookup k ms of
-        Nothing -> (Nothing, Memo ms)
-        Just v' -> (Just v', Memo ms)
+        Nothing -> (Nothing, ms)
+        Just v' -> (Just v', ms)
 
 -- | Store a result in the memo map.
 memoInsert :: Int -> Integer -> MemoMonad ()
 memoInsert k v =
-  state (\(Memo ms) -> ((), Memo $ M.insert k v ms))
+  state (\ms -> ((), M.insert k v ms))
 
 memoize :: (Int -> MemoMonad Integer) -> Int -> MemoMonad Integer
 memoize f n = do
@@ -36,7 +36,7 @@ memoize f n = do
 
 runMemoize :: (Int -> MemoMonad Integer) -> Int -> Integer
 runMemoize m x =
-  evalState (m x) (Memo M.empty)
+  evalState (m x) M.empty
 
 fib2 :: Int -> MemoMonad Integer
 fib2 =
