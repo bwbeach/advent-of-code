@@ -1,6 +1,6 @@
 module Main where
 
-import Advent (runTestAndInput)
+import Advent (memoize, runMemoize, runTestAndInput)
 import Data.List (group, sort)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
@@ -8,7 +8,7 @@ import Debug.Trace
 import Topograph (pairs)
 
 main :: IO ()
-main = runTestAndInput parse part1 part2
+main = runTestAndInput parse part1 part2m
 
 type Problem = [Int]
 
@@ -24,8 +24,8 @@ part1 problem =
     valueAndCount as = (head as, length as)
     delta (a, b) = b - a
 
-part2 :: Problem -> Integer
-part2 problem =
+part2f :: Problem -> Integer
+part2f problem =
   answers M.! 0
   where
     answers = foldr step (M.singleton top 1) (0 : sort problem)
@@ -34,5 +34,27 @@ part2 problem =
     step n soFar = M.insert n (sum . map (getPossible soFar) $ [n + 1 .. n + 3]) soFar
 
     getPossible soFar n = M.findWithDefault 0 n soFar
+
+    top = 3 + maximum problem
+
+part2m :: Problem -> Integer
+part2m problem =
+  runMemoize go 0
+  where
+    go = memoize go'
+
+    go' n
+      | top < n = return 0
+      | top == n = return 1
+      | otherwise =
+          if adapterExists n
+            then do
+              a <- go (n + 1)
+              b <- go (n + 2)
+              c <- go (n + 3)
+              return (a + b + c)
+            else return 0
+
+    adapterExists n = n `elem` problem || n == 0
 
     top = 3 + maximum problem
