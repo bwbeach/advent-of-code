@@ -2,6 +2,7 @@
 
 module Advent
   ( Grid (..),
+    countThings,
     gridBounds,
     gridEmpty,
     gridFormat,
@@ -38,6 +39,14 @@ run parse part1 part2 (f : fs) = do
 runTestAndInput :: (Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> IO ()
 runTestAndInput parse part1 part2 = do
   run parse part1 part2 ["test.txt", "input.txt"]
+
+-- | Takes a Foldable sequence of things and counts them.
+-- Returns a map from a thing in the sequence to the number of occurrences.
+countThings :: (Ord k, Foldable f) => f k -> M.Map k Int
+countThings =
+  foldl incr M.empty
+  where
+    incr m k = M.insert k (1 + M.findWithDefault 0 k m) m
 
 -- | Returns the contents if a singleton list.
 --

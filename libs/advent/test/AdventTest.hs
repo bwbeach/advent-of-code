@@ -4,6 +4,7 @@ module Main (main) where
 
 import Advent
   ( Grid (..),
+    countThings,
     gridBounds,
     gridEmpty,
     gridFormat,
@@ -19,6 +20,9 @@ main :: IO ()
 main = do
   result <- runTestTT tests
   if failures result > 0 then exitFailure else exitSuccess
+
+testCountThings :: Test
+testCountThings = TestCase (assertEqual "countThings" (M.fromList [('a', 2), ('l', 1), ('f', 1)]) (countThings "alfa"))
 
 testGridEmpty :: Test
 testGridEmpty = TestCase (assertEqual "empty map" (gridMap gridEmpty) M.empty)
