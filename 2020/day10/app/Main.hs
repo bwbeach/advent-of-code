@@ -1,6 +1,6 @@
 module Main where
 
-import Advent (memoize, runMemoize, runTestAndInput)
+import Advent (countThings, memoize, runMemoize, runTestAndInput)
 import Data.List (group, sort)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
@@ -19,9 +19,8 @@ part1 :: Problem -> Int
 part1 problem =
   m M.! 1 * m M.! 3
   where
-    m = M.fromList . map valueAndCount . group . sort . map delta . pairs . sort . addBounds $ problem
+    m = countThings . map delta . pairs . sort . addBounds $ problem
     addBounds problem = problem ++ [0, 3 + maximum problem]
-    valueAndCount as = (head as, length as)
     delta (a, b) = b - a
 
 part2f :: Problem -> Integer
