@@ -48,11 +48,7 @@ part2m problem =
       | top == n = return 1
       | otherwise =
           if adapterExists n
-            then do
-              a <- go (n + 1)
-              b <- go (n + 2)
-              c <- go (n + 3)
-              return (a + b + c)
+            then sum <$> mapM go [n + 1 .. n + 3]
             else return 0
 
     adapterExists n = n `elem` problem || n == 0
