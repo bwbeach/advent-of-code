@@ -6,6 +6,8 @@ module Advent
     gridBounds,
     gridEmpty,
     gridFormat,
+    gridGet,
+    gridSet,
     gridMap,
     gridParse,
     memoize,
@@ -13,6 +15,7 @@ module Advent
     only,
     run,
     runTestAndInput,
+    runTest,
   )
 where
 
@@ -34,6 +37,11 @@ run parse part1 part2 (f : fs) = do
       let input = parse text
       print . part1 $ input
       print . part2 $ input
+
+-- | Runs a solution for bath parts of one day against both test and input files.
+runTest :: (Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> IO ()
+runTest parse part1 part2 = do
+  run parse part1 part2 ["test.txt"]
 
 -- | Runs a solution for bath parts of one day against both test and input files.
 runTestAndInput :: (Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> IO ()
@@ -68,6 +76,17 @@ newtype Grid = Grid (M.Map (V2 Int) Char) deriving (Eq, Show, Read)
 -- | An empty grid, with no cells filled.
 gridEmpty :: Grid
 gridEmpty = Grid M.empty
+
+-- | Returns the character at a given position.
+gridGet :: V2 Int -> Grid -> Char
+gridGet p (Grid m) = M.findWithDefault ' ' p m
+
+-- | Updates a grid to set the character at a given position
+gridSet :: V2 Int -> Char -> Grid -> Grid
+gridSet p c (Grid m) =
+  if c == ' '
+    then Grid (M.delete p m)
+    else Grid (M.insert p c m)
 
 -- | Extracts the map from a Grid
 gridMap :: Grid -> M.Map (V2 Int) Char

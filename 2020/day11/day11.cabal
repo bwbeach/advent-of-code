@@ -29,6 +29,6 @@ executable day11
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.16.4.0, advent
+    build-depends:    base ^>=4.16.4.0, advent, linear, containers, topograph
     hs-source-dirs:   app
     default-language: Haskell2010
