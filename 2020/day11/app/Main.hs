@@ -5,7 +5,7 @@ module Main where
 import Advent (Grid (..), gridBounds, gridFormat, gridGet, gridMap, gridParse, runTestAndInput)
 import Data.List (find)
 import qualified Data.Map.Strict as M
-import Data.Maybe (listToMaybe)
+import Data.Maybe (fromJust, listToMaybe, mapMaybe)
 import qualified Data.Set as S
 import Linear.V2 (V2 (..))
 import Topograph (G (gDiff), pairs)
@@ -54,6 +54,10 @@ allPoints (Bounds (V2 x0 y0) (V2 x1 y1)) =
       y <- [y0 .. y1]
   ]
 
+inBounds :: Bounds -> Point -> Bool
+inBounds (Bounds (V2 x0 y0) (V2 x1 y1)) (V2 x y) =
+  x0 <= x && x <= x1 && y0 <= y && y <= y1
+
 data BoundedGrid
   = BoundedGrid Bounds Grid
   deriving (Eq)
@@ -64,14 +68,17 @@ boundedGrid g =
   where
     (minP, maxP) = gridBounds g
 
-boundedGridGet :: Point -> BoundedGrid -> Char
-boundedGridGet p (BoundedGrid _ g) = gridGet p g
+boundedGridGet :: Point -> BoundedGrid -> Maybe Char
+boundedGridGet p (BoundedGrid b g) =
+  if inBounds b p
+    then Just $ gridGet p g
+    else Nothing
 
 type Point = V2 Int
 
 class LifeGrid g where
   lgNew :: g -> [(Point, Char)] -> g
-  lgGet :: Point -> g -> Char
+  lgGet :: Point -> g -> Maybe Char
   lgCells :: g -> [(Point, Char)]
   lgCandidates :: g -> [Point]
 
@@ -79,8 +86,8 @@ instance LifeGrid Grid where
   lgNew :: Grid -> [(Point, Char)] -> Grid
   lgNew _ = Grid . M.fromList
 
-  lgGet :: Point -> Grid -> Char
-  lgGet = gridGet
+  lgGet :: Point -> Grid -> Maybe Char
+  lgGet p g = Just (gridGet p g)
 
   lgCells :: Grid -> [(Point, Char)]
   lgCells = M.toList . gridMap
@@ -92,7 +99,7 @@ instance LifeGrid BoundedGrid where
   lgNew :: BoundedGrid -> [(Point, Char)] -> BoundedGrid
   lgNew (BoundedGrid bounds _) items = BoundedGrid bounds (Grid . M.fromList $ items)
 
-  lgGet :: Point -> BoundedGrid -> Char
+  lgGet :: Point -> BoundedGrid -> Maybe Char
   lgGet = boundedGridGet
 
   lgCells (BoundedGrid _ g) = M.toList . gridMap $ g
@@ -121,7 +128,7 @@ lifeStep newCellState g =
     result =
       [ (p, c)
         | p <- lgCandidates g,
-          let c = newCellState (get p) (map get (pointNeighbors p)),
+          let c = newCellState (fromJust $ get p) (mapMaybe get (pointNeighbors p)),
           c /= ' '
       ]
     get p = lgGet p g
