@@ -7,7 +7,6 @@ import Data.List (find)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, isJust, listToMaybe, mapMaybe)
 import qualified Data.Set as S
-import Debug.Trace
 import Linear.V2 (V2 (..))
 import Topograph (G (gDiff), pairs)
 
@@ -150,7 +149,7 @@ lifeStep newCellState g =
 
 lifeStepWithRay :: (LifeGrid g, Show g) => (Char -> [Char] -> Char) -> g -> g
 lifeStepWithRay newCellState g =
-  traceShowId $ lgNew g result
+  lgNew g result
   where
     result =
       [ (p, c)
