@@ -2,11 +2,12 @@
 
 module Main where
 
-import Advent (Grid (..), gridBounds, gridFormat, gridGet, gridMap, gridParse, runTestAndInput)
+import Advent (Grid (..), gridBounds, gridFormat, gridGet, gridMap, gridParse, runTest, runTestAndInput)
 import Data.List (find)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust, listToMaybe, mapMaybe)
+import Data.Maybe (fromJust, isJust, listToMaybe, mapMaybe)
 import qualified Data.Set as S
+import Debug.Trace
 import Linear.V2 (V2 (..))
 import Topograph (G (gDiff), pairs)
 
@@ -27,6 +28,13 @@ part1 =
     firstSame = fst . head . filter (uncurry (==)) . pairs
     countOccupied = length . filter (== '#') . map snd . lgCells
 
+part2 :: Problem -> Int
+part2 =
+  countOccupied . firstSame . iterate (lifeStepWithRay rule2) . boundedGrid
+  where
+    firstSame = fst . head . filter (uncurry (==)) . pairs
+    countOccupied = length . filter (== '#') . map snd . lgCells
+
 rule :: Char -> [Char] -> Char
 rule c ns =
   case c of
@@ -36,16 +44,22 @@ rule c ns =
   where
     occupied = count '#' ns
 
+rule2 :: Char -> [Char] -> Char
+rule2 c ns =
+  case c of
+    'L' -> if occupied == 0 then '#' else 'L'
+    '#' -> if occupied >= 5 then 'L' else '#'
+    _ -> c
+  where
+    occupied = count '#' ns
+
 count :: (Eq a) => a -> [a] -> Int
 count a = length . filter (== a)
-
-part2 :: Problem -> Int
-part2 _ = 5
 
 -- | Bounds of a rectangle: minX minY maxX maxY
 data Bounds
   = Bounds Point Point
-  deriving (Eq)
+  deriving (Eq, Show)
 
 allPoints :: Bounds -> [Point]
 allPoints (Bounds (V2 x0 y0) (V2 x1 y1)) =
@@ -60,7 +74,7 @@ inBounds (Bounds (V2 x0 y0) (V2 x1 y1)) (V2 x y) =
 
 data BoundedGrid
   = BoundedGrid Bounds Grid
-  deriving (Eq)
+  deriving (Eq, Show)
 
 boundedGrid :: Grid -> BoundedGrid
 boundedGrid g =
@@ -112,13 +126,14 @@ instance LifeGrid BoundedGrid where
 unique :: (Ord a) => [a] -> [a]
 unique = S.toList . S.fromList
 
--- firstVisible :: V2 Int -> V2 Int -> BoundedGrid -> Maybe Char
--- firstVisible p d bg =
---   find (/= ' ') . map (bgGet bg) $ ray p d bg
+firstVisible :: (LifeGrid g) => V2 Int -> V2 Int -> g -> Maybe Char
+firstVisible p d bg =
+  find (/= ' ') . map fromJust . takeWhile isJust . map (get bg) $ ray p d
+  where
+    get g p = lgGet p g
 
--- ray :: V2 Int -> V2 Int -> BoundedGrid -> [V2 Int]
--- ray p d bg =
---   takeWhile (inBounds bg) . iterate (+ d) $ p
+ray :: V2 Int -> V2 Int -> [V2 Int]
+ray p d = iterate (+ d) (p + d)
 
 -- | Computes the next step in a conway-life-style simulation.
 lifeStep :: (LifeGrid g) => (Char -> [Char] -> Char) -> g -> g
@@ -133,15 +148,29 @@ lifeStep newCellState g =
       ]
     get p = lgGet p g
 
+lifeStepWithRay :: (LifeGrid g, Show g) => (Char -> [Char] -> Char) -> g -> g
+lifeStepWithRay newCellState g =
+  traceShowId $ lgNew g result
+  where
+    result =
+      [ (p, c)
+        | p <- lgCandidates g,
+          let c = newCellState (fromJust $ get p) (mapMaybe (fv p) eightDirections),
+          c /= ' '
+      ]
+    get p = lgGet p g
+    fv start dir = firstVisible start dir g
+
 pointAndNeighbors :: Point -> [Point]
 pointAndNeighbors p = p : pointNeighbors p
 
 pointNeighbors :: Point -> [Point]
-pointNeighbors p = map (+ p) deltas
-  where
-    deltas =
-      [ V2 x y
-        | x <- [-1 .. 1],
-          y <- [-1 .. 1],
-          x /= 0 || y /= 0
-      ]
+pointNeighbors p = map (+ p) eightDirections
+
+eightDirections :: [Point]
+eightDirections =
+  [ V2 x y
+    | x <- [-1 .. 1],
+      y <- [-1 .. 1],
+      x /= 0 || y /= 0
+  ]
