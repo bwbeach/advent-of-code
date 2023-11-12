@@ -1,12 +1,12 @@
 module Main where
 
-import Advent (Grid, gridBounds, gridMap, gridParse, runTestAndInput)
+import Advent (Grid, gridBounds, gridMap, gridParse, run)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Linear.V2 (V2 (..))
 
 main :: IO ()
-main = runTestAndInput gridParse part1 part2
+main = run gridParse part1 part2
 
 part1 :: Grid -> Int
 part1 grid = treesOnSlope grid (V2 3 1)

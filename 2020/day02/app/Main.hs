@@ -1,10 +1,10 @@
 module Main where
 
-import Advent (runTestAndInput)
+import Advent (run)
 import Data.List.Split (splitOn)
 
 main :: IO ()
-main = runTestAndInput parse (solve isValid1) (solve isValid2)
+main = run parse (solve isValid1) (solve isValid2)
 
 -- | Parses puzzle input line by line.
 parse :: String -> [(Int, Int, Char, String)]

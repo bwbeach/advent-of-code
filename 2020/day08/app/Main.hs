@@ -1,6 +1,6 @@
 module Main where
 
-import Advent (runTestAndInput)
+import Advent (run)
 import Data.List.Split (endBy)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, isNothing)
@@ -8,7 +8,7 @@ import qualified Data.Set as S
 import Debug.Trace
 
 main :: IO ()
-main = runTestAndInput parse part1 part2
+main = run parse part1 part2
 
 data Instruction
   = Acc Int
@@ -74,15 +74,15 @@ isDone :: Problem -> State -> Bool
 isDone problem s = hasLooped s || hasHalted problem s
 
 -- | Run a problem from the initial state until it's done.
-run :: Problem -> State
-run p = head . dropWhile (not . isDone p) . allStates $ p
+runProblem :: Problem -> State
+runProblem p = head . dropWhile (not . isDone p) . allStates $ p
 
 part1 :: Problem -> Int
-part1 = acc . run
+part1 = acc . runProblem
 
 part2 :: Problem -> Int
 part2 p =
-  acc . only . filter (hasHalted p) . map (run . corruptInstructionAt p) $ [1 .. lastAddr]
+  acc . only . filter (hasHalted p) . map (runProblem . corruptInstructionAt p) $ [1 .. lastAddr]
   where
     lastAddr = maximum (M.keys p)
     only [x] = x

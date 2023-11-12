@@ -1,9 +1,9 @@
 module Main where
 
-import Advent (runTestAndInput)
+import Advent (run)
 
 main :: IO ()
-main = runTestAndInput parse (solve 2) (solve 3)
+main = run parse (solve 2) (solve 3)
 
 -- | Parses input for 2020 Day 01
 parse :: String -> [Int]

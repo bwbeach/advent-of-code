@@ -1,6 +1,6 @@
 module Main where
 
-import Advent (runTestAndInput)
+import Advent (run)
 import qualified Data.Graph.Wrapper as G
 import Data.List.Split (endBy, splitOn)
 import qualified Data.Map.Strict as M
@@ -8,7 +8,7 @@ import Data.Maybe (fromJust)
 import Data.Tuple.Extra (second)
 
 main :: IO ()
-main = runTestAndInput parse part1 part2
+main = run parse part1 part2
 
 type Color = String
 

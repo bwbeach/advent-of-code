@@ -1,6 +1,6 @@
 module Main where
 
-import Advent (countThings, memoize, runMemoize, runTestAndInput)
+import Advent (countThings, memoize, runMemoize, run)
 import Data.List (group, sort)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
@@ -8,7 +8,7 @@ import Debug.Trace
 import Topograph (pairs)
 
 main :: IO ()
-main = runTestAndInput parse part1 part2m
+main = run parse part1 part2m
 
 type Problem = [Int]
 

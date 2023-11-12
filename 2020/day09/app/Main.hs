@@ -2,12 +2,12 @@
 
 module Main where
 
-import Advent (runTestAndInput)
+import Advent (run)
 import Data.List.Extra (notNull, tails)
 import Data.Maybe (mapMaybe)
 
 main :: IO ()
-main = runTestAndInput parse part1 part2
+main = run parse part1 part2
 
 type Problem = (Int, [Int])
 

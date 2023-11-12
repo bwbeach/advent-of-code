@@ -14,39 +14,76 @@ module Advent
     runMemoize,
     only,
     run,
-    runTestAndInput,
-    runTest,
   )
 where
 
 import Control.Monad.State.Lazy
+  ( MonadState (state),
+    State,
+    evalState,
+  )
 import Data.Map.Strict qualified as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromJust, fromMaybe)
 import Linear.V2 (V2 (..))
 
--- | Runs a solution on a list of input files.
-run :: (Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> [String] -> IO ()
-run _ _ _ [] = pure ()
-run parse part1 part2 (f : fs) = do
-  runFile f
-  run parse part1 part2 fs
+{-
+  Each problem appears in its own directory.  There's a cabal project
+  named for the day, such as "day08", and also these files:
+
+     answers.txt - a list of the inputs and their expected answers
+                   (see parseAnswerLine for details of the format)
+
+     test.txt - the sample input from the problem description
+
+     input.txt - the actual input
+-}
+
+-- | Runs a solution on a list of input files listed in answers.txt.
+run :: (Eq b, Eq c, Read b, Read c, Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> IO ()
+run parse part1 part2 = do
+  answers <- readAnswers
+  mapM_ runOne answers
   where
-    runFile fileName = do
-      putStrLn fileName
+    runOne (fileName, (mb, mc)) = do
       text <- readFile fileName
       let input = parse text
-      print . part1 $ input
-      print . part2 $ input
+      let b = part1 input
+      let c = part2 input
+      checkAnswer "part1" mb b
+      checkAnswer "part2" mc c
+      putStrLn (fileName ++ " " ++ show b ++ " " ++ show c)
 
--- | Runs a solution for bath parts of one day against both test and input files.
-runTest :: (Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> IO ()
-runTest parse part1 part2 = do
-  run parse part1 part2 ["test.txt"]
+-- | Checks one answer
+checkAnswer :: (Eq a, Show a) => [Char] -> Maybe a -> a -> IO ()
+checkAnswer title expected actual = do
+  case expected of
+    Nothing ->
+      putStrLn (title ++ " UNCHECKED: " ++ show actual)
+    Just e ->
+      if e == actual
+        then return ()
+        else putStrLn (title ++ ":  EXPECTED " ++ show e ++ " GOT " ++ show actual)
 
--- | Runs a solution for bath parts of one day against both test and input files.
-runTestAndInput :: (Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> IO ()
-runTestAndInput parse part1 part2 = do
-  run parse part1 part2 ["test.txt", "input.txt"]
+-- | Reads expected answers
+readAnswers :: (Read b, Read c) => IO [(String, (Maybe b, Maybe c))]
+readAnswers = do
+  answers <- readFile "answers.txt"
+  let items = map parseAnswerLine . lines $ answers
+  return items
+
+-- | Parses one line of the answer file.
+-- Each line names an input file, and has the expected answers
+-- for part1 and part2 of the problem.  If the expected answers
+-- aren't known yet, "?" takes the place of the answer.
+parseAnswerLine :: (Read b, Read c) => String -> (String, (Maybe b, Maybe c))
+parseAnswerLine line =
+  (fileName, (readMaybe b, readMaybe c))
+  where
+    [fileName, b, c] = words line
+
+readMaybe :: (Read x) => String -> Maybe x
+readMaybe "?" = Nothing
+readMaybe s = Just (read s)
 
 -- | Takes a Foldable sequence of things and counts them.
 -- Returns a map from a thing in the sequence to the number of occurrences.

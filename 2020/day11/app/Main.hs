@@ -2,7 +2,7 @@
 
 module Main where
 
-import Advent (Grid (..), gridBounds, gridFormat, gridGet, gridMap, gridParse, runTest, runTestAndInput)
+import Advent (Grid (..), gridBounds, gridFormat, gridGet, gridMap, gridParse, run)
 import Data.List (find)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, isJust, listToMaybe, mapMaybe)
@@ -11,7 +11,7 @@ import Linear.V2 (V2 (..))
 import Topograph (G (gDiff), pairs)
 
 main :: IO ()
-main = runTestAndInput parse part1 part2
+main = run parse part1 part2
 
 type Problem = Grid
 

@@ -1,11 +1,11 @@
 module Main where
 
-import Advent (runTestAndInput)
+import Advent (run)
 import Data.List.Split
 import qualified Data.Set as S
 
 main :: IO ()
-main = runTestAndInput parse part1 part2
+main = run parse part1 part2
 
 parse :: String -> [String]
 parse = endBy "\n"

@@ -9,7 +9,7 @@ import Debug.Trace
 import Text.Regex.TDFA
 
 main :: IO ()
-main = run parse part1 part2 ["test.txt", "none.txt", "three.txt", "input.txt"]
+main = run parse part1 part2
 
 parse :: String -> [M.Map String String]
 parse =
