@@ -11,7 +11,8 @@ RUN apt-get update && \
     libgmp-dev \
     libtinfo-dev \
     libsqlite3-dev \
-    zlib1g-dev
+    zlib1g-dev \
+    git
 
 # Install ghcup
 RUN curl https://get-ghcup.haskell.org -sSf | sh
