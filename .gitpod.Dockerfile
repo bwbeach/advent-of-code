@@ -15,17 +15,17 @@ RUN apt-get update && \
     git
 
 # Install ghcup
-RUN curl https://get-ghcup.haskell.org -sSf | sh
+# RUN curl https://get-ghcup.haskell.org -sSf | sh
 
 # Add ghcup to the PATH
-ENV PATH="/root/.ghcup/bin:${PATH}"
+# ENV PATH="/root/.ghcup/bin:${PATH}"
 
 # Clean up
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# RUN apt-get clean && \
+#    rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
-WORKDIR /app
+# WORKDIR /app
 
 # Set the default command
-CMD ["bash"]
+# CMD ["bash"]
