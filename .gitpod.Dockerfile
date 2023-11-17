@@ -1,14 +1,30 @@
+# Use the official Ubuntu LTS base image
 FROM ubuntu:latest
 
-# Basic system libraries
-#RUN    apk update \
-#    && apk upgrade --available \
-#    && apk add \
-#        build-base make cmake gcc gmp curl xz perl cpio coreutils \
-#        binutils-gold tar gzip unzip\
-#        libc-dev musl-dev ncurses-dev gmp-dev zlib-dev expat-dev libffi-dev \
-#        gd-dev postgresql-dev linux-headers git
+# Set environment variables
+ENV DEBIAN_FRONTEND noninteractive
 
-# Bootstrap Cabal and GHC
-# RUN curl https://gitlab.haskell.org/haskell/ghcup/raw/master/bootstrap-haskell -sSf | sh && /root/.ghcup/bin/ghcup set
-# ENV PATH "$PATH:/root/.cabal/bin:/root/.ghcup/bin"
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y \
+    curl \
+    libgmp-dev \
+    libtinfo-dev \
+    libsqlite3-dev \
+    zlib1g-dev
+
+# Install ghcup
+RUN curl https://get-ghcup.haskell.org -sSf | sh
+
+# Add ghcup to the PATH
+ENV PATH="/root/.ghcup/bin:${PATH}"
+
+# Clean up
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Set the default command
+CMD ["bash"]
