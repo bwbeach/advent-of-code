@@ -10,6 +10,5 @@ RUN    apk update \
         gd-dev postgresql-dev linux-headers
 
 # Bootstrap Cabal and GHC
-RUN curl https://gitlab.haskell.org/haskell/ghcup/raw/master/bootstrap-haskell -sSf | sh \
-    && /root/.ghcup/bin/ghcup set
-ENV PATH "$PATH:/root/.cabal/bin:/root/.ghcup/bin"
+# RUN curl https://gitlab.haskell.org/haskell/ghcup/raw/master/bootstrap-haskell -sSf | sh && /root/.ghcup/bin/ghcup set
+# ENV PATH "$PATH:/root/.cabal/bin:/root/.ghcup/bin"
