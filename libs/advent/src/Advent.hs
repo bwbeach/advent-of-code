@@ -30,6 +30,7 @@ import Data.Map.Strict qualified as M
 import Data.Maybe (fromJust, fromMaybe)
 import GHC.TypeLits qualified as Ints
 import Linear.V2 (V2 (..))
+import System.Exit (exitFailure, exitSuccess)
 
 {-
   Each problem appears in its own directory.  There's a cabal project
@@ -47,27 +48,34 @@ import Linear.V2 (V2 (..))
 run :: (Eq b, Eq c, Read b, Read c, Show b, Show c) => (String -> a) -> (a -> b) -> (a -> c) -> IO ()
 run parse part1 part2 = do
   answers <- readAnswers
-  mapM_ runOne answers
+  oks <- mapM runOne answers
+  if and oks
+    then exitSuccess
+    else exitFailure
   where
     runOne (fileName, (mb, mc)) = do
       text <- readFile fileName
       let input = parse text
       let b = part1 input
       let c = part2 input
-      checkAnswer "part1" mb b
-      checkAnswer "part2" mc c
+      ok1 <- checkAnswer "part1" mb b
+      ok2 <- checkAnswer "part2" mc c
       putStrLn (fileName ++ " " ++ show b ++ " " ++ show c)
+      return (ok1 && ok2)
 
 -- | Checks one answer
-checkAnswer :: (Eq a, Show a) => [Char] -> Maybe a -> a -> IO ()
+checkAnswer :: (Eq a, Show a) => [Char] -> Maybe a -> a -> IO Bool
 checkAnswer title expected actual = do
   case expected of
-    Nothing ->
+    Nothing -> do
       putStrLn (title ++ " UNCHECKED: " ++ show actual)
+      return True
     Just e ->
       if e == actual
-        then return ()
-        else putStrLn (title ++ ":  EXPECTED " ++ show e ++ " GOT " ++ show actual)
+        then return True
+        else do
+          putStrLn (title ++ ":  EXPECTED " ++ show e ++ " GOT " ++ show actual)
+          return False
 
 -- | Reads expected answers
 readAnswers :: (Read b, Read c) => IO [(String, (Maybe b, Maybe c))]
