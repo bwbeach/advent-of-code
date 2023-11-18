@@ -20,11 +20,11 @@ RUN sudo apt-get -y install \
 # Install ghcup
 RUN curl https://get-ghcup.haskell.org -sSf | sh
 
-# Switch to the version of GHC that I'm using
-RUN ghcup install ghc 9.2.8 && ghcup set ghc 9.2.8
-
 # Add ghcup to the PATH
 ENV PATH="$HOME/.ghcup/bin:${PATH}"
+
+# Switch to the version of GHC that I'm using
+RUN ghcup install ghc 9.2.8 && ghcup set ghc 9.2.8
 
 # Clean up
 # RUN apt-get clean && \
