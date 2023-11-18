@@ -16,7 +16,7 @@ import Advent
   )
 import Data.List (find)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust, isJust, listToMaybe, mapMaybe)
+import Data.Maybe (fromJust, fromMaybe, isJust, listToMaybe, mapMaybe)
 import qualified Data.Set as S
 import Linear.V2 (V2 (..))
 import Topograph (G (gDiff), pairs)
@@ -81,6 +81,9 @@ boundedGridGet p (BoundedGrid b g) =
   if rectangleContains b p
     then Just $ gridGet p g
     else Nothing
+
+boundedGridInBounds :: Point -> BoundedGrid -> Bool
+boundedGridInBounds p (BoundedGrid b _) = rectangleContains b p
 
 type Point = V2 Int
 
@@ -164,11 +167,23 @@ lifeStepWithRay newCellState g =
     result =
       [ (p, c)
         | p <- lgCandidates g,
-          let c = newCellState (fromJust $ get p) (mapMaybe (fv p) eightDirections),
+          let neighbs = rayNeighbors g p,
+          let neighbStates = map (fromJust . get) neighbs,
+          let c = newCellState (fromJust $ get p) neighbStates,
           c /= ' '
       ]
     get p = lgGet p g
     fv start dir = firstVisible start dir g
+
+rayNeighbors :: (LifeGrid g) => g -> Point -> [Point]
+rayNeighbors g p =
+  mapMaybe firstVisiblePoint eightDirections
+  where
+    firstVisiblePoint = find nonEmpty . ray2
+    ray2 dir = takeWhile inBounds . iterate (+ dir) $ (p + dir)
+    inBounds p = isJust $ lgGet p g
+    nonEmpty :: Point -> Bool
+    nonEmpty p = (/= ' ') . fromMaybe ' ' $ lgGet p g
 
 pointAndNeighbors :: Point -> [Point]
 pointAndNeighbors p = p : pointNeighbors p
