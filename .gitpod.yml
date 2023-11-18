@@ -5,3 +5,4 @@ image:
 vscode:
   extensions:
     - haskell.haskell
+    - k--kato.intellij-idea-keybindings
