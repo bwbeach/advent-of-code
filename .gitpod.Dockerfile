@@ -2,17 +2,19 @@
 FROM gitpod/workspace-base
 
 # Set environment variables
-ENV DEBIAN_FRONTEND noninteractive
+# ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies
-RUN apt-get update && \
-    apt-get install -y \
-    curl \
-    libgmp-dev \
-    libtinfo-dev \
-    libsqlite3-dev \
-    zlib1g-dev \
-    git
+RUN sudo apt update
+
+#RUN apt-get update && \
+#    apt-get install -y \
+#    curl \
+#    libgmp-dev \
+#    libtinfo-dev \
+#    libsqlite3-dev \
+#    zlib1g-dev \
+#    git
 
 # Install ghcup
 # RUN curl https://get-ghcup.haskell.org -sSf | sh
