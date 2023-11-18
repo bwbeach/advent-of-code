@@ -10,7 +10,7 @@ FROM gitpod/workspace-base
 # Running ghcup install by hand with workspace base said this:
 # Please ensure the following distro packages are installed before continuing (you can exit ghcup and return at any time): build-essential curl libffi-dev libffi8ubuntu1 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
 
-RUN sudo apt install \
+RUN sudo apt-get -y install \
     build-essential \
     curl \
     libffi-dev \
