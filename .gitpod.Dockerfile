@@ -1,5 +1,5 @@
 # Use the official Ubuntu LTS base image
-FROM gitpod:workspace-base
+FROM gitpod/workspace-base
 
 # Set environment variables
 ENV DEBIAN_FRONTEND noninteractive
