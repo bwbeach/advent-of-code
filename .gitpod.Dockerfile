@@ -34,7 +34,7 @@ RUN sudo apt install \
 RUN curl https://get-ghcup.haskell.org -sSf | sh
 
 # Add ghcup to the PATH
-# ENV PATH="/root/.ghcup/bin:${PATH}"
+ENV PATH="/$HOME/.ghcup/bin:${PATH}"
 
 # Clean up
 # RUN apt-get clean && \
