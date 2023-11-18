@@ -5,7 +5,21 @@ FROM gitpod/workspace-base
 # ENV DEBIAN_FRONTEND noninteractive
 
 # Install dependencies
-RUN sudo apt update
+# RUN sudo apt update
+
+# Running ghcup install by hand with workspace base said this:
+# Please ensure the following distro packages are installed before continuing (you can exit ghcup and return at any time): build-essential curl libffi-dev libffi8ubuntu1 libgmp-dev libgmp10 libncurses-dev libncurses5 libtinfo5
+
+RUN sudo apt install \
+    build-essential \
+    curl \
+    libffi-dev \
+    libffi8ubuntu1 \
+    libgmp-dev \
+    libgmp10 \
+    libncurses-dev \
+    libncurses5 \
+    libtinfo5
 
 #RUN apt-get update && \
 #    apt-get install -y \
@@ -17,7 +31,7 @@ RUN sudo apt update
 #    git
 
 # Install ghcup
-# RUN curl https://get-ghcup.haskell.org -sSf | sh
+RUN curl https://get-ghcup.haskell.org -sSf | sh
 
 # Add ghcup to the PATH
 # ENV PATH="/root/.ghcup/bin:${PATH}"
