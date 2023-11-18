@@ -4,6 +4,7 @@ module Main (main) where
 
 import Advent
   ( Grid (..),
+    Rectangle (..),
     countThings,
     gridBounds,
     gridEmpty,
@@ -12,6 +13,7 @@ import Advent
     gridMap,
     gridParse,
     gridSet,
+    rectanglePoints,
   )
 import Data.Map.Strict qualified as M
 import Linear.V2 (V2 (..))
@@ -25,6 +27,15 @@ main = do
 
 testCountThings :: Test
 testCountThings = TestCase (assertEqual "countThings" (M.fromList [('a', 2), ('l', 1), ('f', 1)]) (countThings "alfa"))
+
+testRectanglePoints :: Test
+testRectanglePoints =
+  TestCase
+    ( assertEqual
+        "rectanglePoints"
+        [V2 1 5, V2 1 6, V2 2 5, V2 2 6]
+        (rectanglePoints (Rectangle (V2 1 5) (V2 2 6)))
+    )
 
 testGridSet :: Test
 testGridSet =

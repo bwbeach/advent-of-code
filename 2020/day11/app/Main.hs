@@ -2,7 +2,18 @@
 
 module Main where
 
-import Advent (Grid (..), gridBounds, gridFormat, gridGet, gridMap, gridParse, run)
+import Advent
+  ( Grid (..),
+    Rectangle (..),
+    gridBounds,
+    gridFormat,
+    gridGet,
+    gridMap,
+    gridParse,
+    rectangleContains,
+    rectanglePoints,
+    run,
+  )
 import Data.List (find)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, isJust, listToMaybe, mapMaybe)
@@ -55,35 +66,19 @@ rule2 c ns =
 count :: (Eq a) => a -> [a] -> Int
 count a = length . filter (== a)
 
--- | Bounds of a rectangle: minX minY maxX maxY
-data Bounds
-  = Bounds Point Point
-  deriving (Eq, Show)
-
-allPoints :: Bounds -> [Point]
-allPoints (Bounds (V2 x0 y0) (V2 x1 y1)) =
-  [ V2 x y
-    | x <- [x0 .. x1],
-      y <- [y0 .. y1]
-  ]
-
-inBounds :: Bounds -> Point -> Bool
-inBounds (Bounds (V2 x0 y0) (V2 x1 y1)) (V2 x y) =
-  x0 <= x && x <= x1 && y0 <= y && y <= y1
-
 data BoundedGrid
-  = BoundedGrid Bounds Grid
+  = BoundedGrid Rectangle Grid
   deriving (Eq, Show)
 
 boundedGrid :: Grid -> BoundedGrid
 boundedGrid g =
-  BoundedGrid (Bounds minP maxP) g
+  BoundedGrid (Rectangle minP maxP) g
   where
     (minP, maxP) = gridBounds g
 
 boundedGridGet :: Point -> BoundedGrid -> Maybe Char
 boundedGridGet p (BoundedGrid b g) =
-  if inBounds b p
+  if rectangleContains b p
     then Just $ gridGet p g
     else Nothing
 
@@ -118,7 +113,7 @@ instance LifeGrid BoundedGrid where
   lgCells (BoundedGrid _ g) = M.toList . gridMap $ g
 
   lgCandidates :: BoundedGrid -> [Point]
-  lgCandidates (BoundedGrid bounds _) = allPoints bounds
+  lgCandidates (BoundedGrid bounds _) = rectanglePoints bounds
 
 -- | Returns all of the unique values from the list
 -- ... and happens to return them in order.

@@ -1,7 +1,11 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
 module Advent
-  ( Grid (..),
+  ( Point (..),
+    Rectangle (..),
+    rectangleContains,
+    rectanglePoints,
+    Grid (..),
     countThings,
     gridBounds,
     gridEmpty,
@@ -24,6 +28,7 @@ import Control.Monad.State.Lazy
   )
 import Data.Map.Strict qualified as M
 import Data.Maybe (fromJust, fromMaybe)
+import GHC.TypeLits qualified as Ints
 import Linear.V2 (V2 (..))
 
 {-
@@ -99,6 +104,29 @@ countThings =
 only :: (Show a) => [a] -> a
 only [a] = a
 only as = error ("expected exactly one: " ++ show as)
+
+-- | A point on a plane of Ints
+type Point = V2 Int
+
+-- | A rectangle on a plane of Ints.
+--
+-- The bounds of the rectangle are inclusive.
+data Rectangle
+  = Rectangle Point Point
+  deriving (Eq, Show)
+
+-- | Does the rectangle contain the given point?
+rectangleContains :: Rectangle -> Point -> Bool
+rectangleContains (Rectangle (V2 x0 y0) (V2 x1 y1)) (V2 x y) =
+  x0 <= x && x <= x1 && y0 <= y && y <= y1
+
+-- | All of the points within a rectangle
+rectanglePoints :: Rectangle -> [Point]
+rectanglePoints (Rectangle (V2 x0 y0) (V2 x1 y1)) =
+  [ V2 x y
+    | x <- [x0 .. x1],
+      y <- [y0 .. y1]
+  ]
 
 -- | A grid of characters.
 --
