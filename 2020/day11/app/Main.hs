@@ -33,7 +33,7 @@ parse = gridParse . replace '.' ' '
 
 part1 :: Problem -> Int
 part1 =
-  countOccupied . firstSame . iterate (lifeStep rule) . boundedGrid
+  countOccupied . firstSame . iterate (lifeStep pointNeighbors rule) . boundedGrid
   where
     firstSame = fst . head . filter (uncurry (==)) . pairs
     countOccupied = length . filter (== '#') . map snd . lgCells
@@ -84,11 +84,39 @@ boundedGridGet p (BoundedGrid b g) =
 
 type Point = V2 Int
 
+-- | A grid that supports generalized Conway's Life
 class LifeGrid g where
+  -- | Create a new grid of the same type, with the given cells.
+  -- The old grid is used as context, because some grid types
+  -- have properties (such as size) that carry over to the new
+  -- grid.
   lgNew :: g -> [(Point, Char)] -> g
+
+  -- | Get the state of one point on the grid
+  -- The result is ' ' if the point is on the grid, but
+  -- there is nothing there.  The result is Nothing if
+  -- the point is not valid for this grid.
   lgGet :: Point -> g -> Maybe Char
+
+  -- | Returns all of the cells that have something present.
   lgCells :: g -> [(Point, Char)]
+
+  -- | Returns all of the places that might have something
+  -- in the next iteration.
   lgCandidates :: g -> [Point]
+
+-- | Computes the next step in a conway-life-style simulation.
+lifeStep :: (LifeGrid g) => (Point -> [Point]) -> (Char -> [Char] -> Char) -> g -> g
+lifeStep neighbors newCellState g =
+  lgNew g result
+  where
+    result =
+      [ (p, c)
+        | p <- lgCandidates g,
+          let c = newCellState (fromJust $ get p) (mapMaybe get (neighbors p)),
+          c /= ' '
+      ]
+    get p = lgGet p g
 
 instance LifeGrid Grid where
   lgNew :: Grid -> [(Point, Char)] -> Grid
@@ -128,19 +156,6 @@ firstVisible p d bg =
 
 ray :: V2 Int -> V2 Int -> [V2 Int]
 ray p d = iterate (+ d) (p + d)
-
--- | Computes the next step in a conway-life-style simulation.
-lifeStep :: (LifeGrid g) => (Char -> [Char] -> Char) -> g -> g
-lifeStep newCellState g =
-  lgNew g result
-  where
-    result =
-      [ (p, c)
-        | p <- lgCandidates g,
-          let c = newCellState (fromJust $ get p) (mapMaybe get (pointNeighbors p)),
-          c /= ' '
-      ]
-    get p = lgGet p g
 
 lifeStepWithRay :: (LifeGrid g, Show g) => (Char -> [Char] -> Char) -> g -> g
 lifeStepWithRay newCellState g =
