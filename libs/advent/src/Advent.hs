@@ -1,7 +1,8 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
 module Advent
-  ( Point (..),
+  ( LifeGrid (lgNew, lgGet, lgCells, lgCandidates),
+    Point (..),
     Rectangle (..),
     rectangleContains,
     rectanglePoints,
@@ -14,6 +15,7 @@ module Advent
     gridSet,
     gridMap,
     gridParse,
+    life,
     memoize,
     runMemoize,
     only,
@@ -27,7 +29,7 @@ import Control.Monad.State.Lazy
     evalState,
   )
 import Data.Map.Strict qualified as M
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import GHC.TypeLits qualified as Ints
 import Linear.V2 (V2 (..))
 import System.Exit (exitFailure, exitSuccess)
@@ -223,3 +225,41 @@ memoize f n = do
 runMemoize :: (Ord k) => (k -> State (Memo k v) v) -> k -> v
 runMemoize m x =
   evalState (m x) M.empty
+
+-- | A grid that supports generalized Conway's Life
+class LifeGrid g where
+  -- | Create a new grid of the same type, with the given cells.
+  -- The old grid is used as context, because some grid types
+  -- have properties (such as size) that carry over to the new
+  -- grid.
+  lgNew :: g -> [(Point, Char)] -> g
+
+  -- | Get the state of one point on the grid
+  -- The result is ' ' if the point is on the grid, but
+  -- there is nothing there.  The result is Nothing if
+  -- the point is not valid for this grid.
+  lgGet :: Point -> g -> Maybe Char
+
+  -- | Returns all of the cells that have something present.
+  lgCells :: g -> [(Point, Char)]
+
+  -- | Returns all of the places that might have something
+  -- in the next iteration.
+  lgCandidates :: g -> [Point]
+
+-- | Computes the next step in a conway-life-style simulation.
+lifeStep :: (LifeGrid g) => (g -> Point -> [Point]) -> (Char -> [Char] -> Char) -> g -> g
+lifeStep neighbors newCellState g =
+  lgNew g result
+  where
+    result =
+      [ (p, c)
+        | p <- lgCandidates g,
+          let c = newCellState (fromJust $ get p) (mapMaybe get (neighbors g p)),
+          c /= ' '
+      ]
+    get p = lgGet p g
+
+-- | Sequence of states of a conway-life-style simulation
+life :: (LifeGrid g) => (g -> Point -> [Point]) -> (Char -> [Char] -> Char) -> g -> [g]
+life neighbors newCellState = iterate (lifeStep neighbors newCellState)
