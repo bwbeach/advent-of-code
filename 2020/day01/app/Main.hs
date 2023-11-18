@@ -1,6 +1,6 @@
 module Main where
 
-import Advent (run)
+import Advent (only, run)
 
 main :: IO ()
 main = run parse (solve 2) (solve 3)
@@ -28,10 +28,3 @@ choose :: Int -> [a] -> [[a]]
 choose 0 _ = [[]]
 choose _ [] = []
 choose n (x : xs) = map (x :) (choose (n - 1) xs) ++ choose n xs
-
--- | Returns the contents if a singleton list.
---
--- It's an error if the length of the list is not 1.
-only :: (Show a) => [a] -> a
-only [a] = a
-only as = error ("expected exactly one: " ++ show as)
