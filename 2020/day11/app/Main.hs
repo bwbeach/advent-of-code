@@ -33,14 +33,14 @@ parse = gridParse . replace '.' ' '
 
 part1 :: Problem -> Int
 part1 =
-  countOccupied . firstSame . iterate (lifeStep pointNeighbors rule) . boundedGrid
+  countOccupied . firstSame . life (const pointNeighbors) rule . boundedGrid
   where
     firstSame = fst . head . filter (uncurry (==)) . pairs
     countOccupied = length . filter (== '#') . map snd . lgCells
 
 part2 :: Problem -> Int
 part2 =
-  countOccupied . firstSame . iterate (lifeStepWithRay rule2) . boundedGrid
+  countOccupied . firstSame . life rayNeighbors rule2 . boundedGrid
   where
     firstSame = fst . head . filter (uncurry (==)) . pairs
     countOccupied = length . filter (== '#') . map snd . lgCells
@@ -109,17 +109,21 @@ class LifeGrid g where
   lgCandidates :: g -> [Point]
 
 -- | Computes the next step in a conway-life-style simulation.
-lifeStep :: (LifeGrid g) => (Point -> [Point]) -> (Char -> [Char] -> Char) -> g -> g
+lifeStep :: (LifeGrid g) => (g -> Point -> [Point]) -> (Char -> [Char] -> Char) -> g -> g
 lifeStep neighbors newCellState g =
   lgNew g result
   where
     result =
       [ (p, c)
         | p <- lgCandidates g,
-          let c = newCellState (fromJust $ get p) (mapMaybe get (neighbors p)),
+          let c = newCellState (fromJust $ get p) (mapMaybe get (neighbors g p)),
           c /= ' '
       ]
     get p = lgGet p g
+
+-- | Sequence of states of a conway-life-style simulation
+life :: (LifeGrid g) => (g -> Point -> [Point]) -> (Char -> [Char] -> Char) -> g -> [g]
+life neighbors newCellState = iterate (lifeStep neighbors newCellState)
 
 instance LifeGrid Grid where
   lgNew :: Grid -> [(Point, Char)] -> Grid
@@ -151,38 +155,13 @@ instance LifeGrid BoundedGrid where
 unique :: (Ord a) => [a] -> [a]
 unique = S.toList . S.fromList
 
-firstVisible :: (LifeGrid g) => V2 Int -> V2 Int -> g -> Maybe Char
-firstVisible p d bg =
-  find (/= ' ') . map fromJust . takeWhile isJust . map (get bg) $ ray p d
-  where
-    get g p = lgGet p g
-
-ray :: V2 Int -> V2 Int -> [V2 Int]
-ray p d = iterate (+ d) (p + d)
-
-lifeStepWithRay :: (LifeGrid g, Show g) => (Char -> [Char] -> Char) -> g -> g
-lifeStepWithRay newCellState g =
-  lgNew g result
-  where
-    result =
-      [ (p, c)
-        | p <- lgCandidates g,
-          let neighbs = rayNeighbors g p,
-          let neighbStates = map (fromJust . get) neighbs,
-          let c = newCellState (fromJust $ get p) neighbStates,
-          c /= ' '
-      ]
-    get p = lgGet p g
-    fv start dir = firstVisible start dir g
-
 rayNeighbors :: (LifeGrid g) => g -> Point -> [Point]
 rayNeighbors g p =
   mapMaybe firstVisiblePoint eightDirections
   where
-    firstVisiblePoint = find nonEmpty . ray2
-    ray2 dir = takeWhile inBounds . iterate (+ dir) $ (p + dir)
+    firstVisiblePoint = find nonEmpty . ray
+    ray dir = takeWhile inBounds . iterate (+ dir) $ (p + dir)
     inBounds p = isJust $ lgGet p g
-    nonEmpty :: Point -> Bool
     nonEmpty p = (/= ' ') . fromMaybe ' ' $ lgGet p g
 
 pointAndNeighbors :: Point -> [Point]
