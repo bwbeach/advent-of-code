@@ -17,8 +17,11 @@ parse :: String -> Problem
 parse = map read . splitOn ","
 
 part1 :: Problem -> Int
-part1 problem =
-  middle . fromJust . find ((== 2020) . left) . iterate step1 $ initialState
+part1 = findNth 2020
+
+findNth :: Int -> Problem -> Int
+findNth n problem =
+  middle . fromJust . find ((== n) . left) . iterate step1 $ initialState
   where
     initialState = (length problem, last problem, M.fromList $ zip (dropEnd 1 problem) [1 ..])
     left (x, _, _) = x
@@ -33,4 +36,4 @@ step1 (i, n, m) =
       Just j -> i - j
 
 part2 :: Problem -> Int
-part2 = length
+part2 = findNth 30000000
