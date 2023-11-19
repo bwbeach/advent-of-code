@@ -5,6 +5,7 @@ import Data.Bits ((.&.), (.|.))
 import Data.List.Extra (dropEnd, foldl')
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
+import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -65,5 +66,21 @@ step1 :: (M.Map Integer Integer, Masker) -> Instruction -> (M.Map Integer Intege
 step1 (m, _) (Mask mask) = (m, masker mask)
 step1 (m, masker) (Store a v) = (M.insert a (applyMasker masker v) m, masker)
 
-part2 :: Problem -> Int
-part2 = length
+part2 :: Problem -> Integer
+part2 problem =
+  sum . M.elems $ finalMap
+  where
+    (finalMap, _) = foldl' step2 (M.empty, []) problem
+
+step2 :: (M.Map Integer Integer, [Masker]) -> Instruction -> (M.Map Integer Integer, [Masker])
+step2 (m, _) (Mask mask) =
+  (m, map masker (allMasks mask))
+  where
+    allMasks [] = [""]
+    allMasks ('0' : ms) = map ('X' :) (allMasks ms)
+    allMasks ('1' : ms) = map ('1' :) (allMasks ms)
+    allMasks ('X' : ms) = map ('0' :) (allMasks ms) ++ map ('1' :) (allMasks ms)
+step2 (m, maskers) (Store a v) =
+  (foldl' doOne m maskers, maskers)
+  where
+    doOne m0 masker = M.insert (applyMasker masker a) v m0
