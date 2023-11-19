@@ -11,7 +11,7 @@ main :: IO ()
 main = run parse part1 part2
 
 data Instruction
-  = Mask Integer Integer
+  = Mask String
   | Store Integer Integer
   deriving (Eq, Show)
 
@@ -24,14 +24,12 @@ parse =
 parseLine :: String -> Instruction
 parseLine line =
   if left == "mask"
-    then Mask andMask orMask
+    then Mask right
     else Store addr value
   where
     [left, right] = splitOn " = " line
     addr = read . drop 4 . dropEnd 1 $ left
     value = read right
-    andMask = readBinary . replace 'X' '1' $ right
-    orMask = readBinary . replace 'X' '0' $ right
 
 replace :: (Eq a) => a -> a -> [a] -> [a]
 replace a b = map (\x -> if x == a then b else x)
@@ -53,7 +51,10 @@ part1 problem =
     (finalMap, _, _) = foldl' step1 (M.empty, 0, 0) problem
 
 step1 :: (M.Map Integer Integer, Integer, Integer) -> Instruction -> (M.Map Integer Integer, Integer, Integer)
-step1 (m, _, _) (Mask am om) = (m, am, om)
+step1 (m, _, _) (Mask mask) = (m, andMask, orMask)
+  where
+    andMask = readBinary . replace 'X' '1' $ mask
+    orMask = readBinary . replace 'X' '0' $ mask
 step1 (m, am, om) (Store a v) = (M.insert a ((v .&. am) .|. om) m, am, om)
 
 part2 :: Problem -> Int
