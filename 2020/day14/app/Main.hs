@@ -5,7 +5,6 @@ import Data.Bits ((.&.), (.|.))
 import Data.List.Extra (dropEnd, foldl')
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
-import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -31,6 +30,18 @@ parseLine line =
     addr = read . drop 4 . dropEnd 1 $ left
     value = read right
 
+data Masker = Masker {orMask :: Integer, andMask :: Integer} deriving (Eq, Show)
+
+masker :: String -> Masker
+masker s =
+  Masker
+    { orMask = readBinary . replace 'X' '0' $ s,
+      andMask = readBinary . replace 'X' '1' $ s
+    }
+
+applyMasker :: Masker -> Integer -> Integer
+applyMasker m n = (n .&. andMask m) .|. orMask m
+
 replace :: (Eq a) => a -> a -> [a] -> [a]
 replace a b = map (\x -> if x == a then b else x)
 
@@ -48,14 +59,11 @@ part1 :: Problem -> Integer
 part1 problem =
   sum . M.elems $ finalMap
   where
-    (finalMap, _, _) = foldl' step1 (M.empty, 0, 0) problem
+    (finalMap, _) = foldl' step1 (M.empty, masker "") problem
 
-step1 :: (M.Map Integer Integer, Integer, Integer) -> Instruction -> (M.Map Integer Integer, Integer, Integer)
-step1 (m, _, _) (Mask mask) = (m, andMask, orMask)
-  where
-    andMask = readBinary . replace 'X' '1' $ mask
-    orMask = readBinary . replace 'X' '0' $ mask
-step1 (m, am, om) (Store a v) = (M.insert a ((v .&. am) .|. om) m, am, om)
+step1 :: (M.Map Integer Integer, Masker) -> Instruction -> (M.Map Integer Integer, Masker)
+step1 (m, _) (Mask mask) = (m, masker mask)
+step1 (m, masker) (Store a v) = (M.insert a (applyMasker masker v) m, masker)
 
 part2 :: Problem -> Int
 part2 = length
