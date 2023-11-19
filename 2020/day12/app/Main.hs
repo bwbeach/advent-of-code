@@ -20,8 +20,6 @@ data Instruction
 
 type Problem = [Instruction]
 
-data Ship = Ship {loc :: Point, dir :: Point} deriving (Show)
-
 parse :: String -> Problem
 parse =
   map parseInstruction . lines
@@ -37,22 +35,40 @@ parse =
     parseHelper 'E' n = Move $ fmap (* n) (V2 1 0)
     parseHelper c n = error ("bad input: " ++ [c] ++ show n)
 
-step :: Ship -> Instruction -> Ship
+data Ship1 = Ship1 {loc :: Point, dir :: Point} deriving (Show)
+
+step :: Ship1 -> Instruction -> Ship1
 step ship inst =
   case inst of
     R n -> ship {dir = right (dir ship) n}
     F n -> ship {loc = loc ship + fmap (* n) (dir ship)}
     Move d -> ship {loc = loc ship + d}
-  where
-    right x 0 = x
-    right (V2 x y) n = right (V2 y (-x)) (n - 90)
+
+right :: Point -> Int -> Point
+right x 0 = x
+right (V2 x y) n = right (V2 y (-x)) (n - 90)
+
+manhattan :: Point -> Int
+manhattan (V2 x y) = abs x + abs y
 
 part1 :: Problem -> Int
 part1 =
   manhattan . loc . foldl step start
   where
-    start = Ship {loc = V2 0 0, dir = V2 1 0}
-    manhattan (V2 x y) = abs x + abs y
+    start = Ship1 {loc = V2 0 0, dir = V2 1 0}
+
+data Ship2 = Ship2 {pos :: Point, wpt :: Point} deriving (Show)
+
+step2 :: Ship2 -> Instruction -> Ship2
+step2 ship inst =
+  case inst of
+    R n -> ship {wpt = right (wpt ship) n}
+    F n -> ship {pos = pos ship + fmap (* n) (wpt ship)}
+    Move d -> ship {wpt = wpt ship + d}
 
 part2 :: Problem -> Int
-part2 = length
+part2 =
+  manhattan . pos . foldl step2 start
+  where
+    start = Ship2 {pos = V2 0 0, wpt = V2 10 1}
+    tstep2 a b = traceShowId (step2 a b)
