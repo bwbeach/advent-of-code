@@ -29,24 +29,34 @@ parse =
     parseHelper 'R' n = R n
     parseHelper 'L' n = R (360 - n)
     parseHelper 'F' n = F n
-    parseHelper 'N' n = Move $ fmap (* n) (V2 0 1)
-    parseHelper 'S' n = Move $ fmap (* n) (V2 0 (-1))
-    parseHelper 'W' n = Move $ fmap (* n) (V2 (-1) 0)
-    parseHelper 'E' n = Move $ fmap (* n) (V2 1 0)
+    parseHelper 'N' n = Move $ scale n (V2 0 1)
+    parseHelper 'S' n = Move $ scale n (V2 0 (-1))
+    parseHelper 'W' n = Move $ scale n (V2 (-1) 0)
+    parseHelper 'E' n = Move $ scale n (V2 1 0)
     parseHelper c n = error ("bad input: " ++ [c] ++ show n)
+
+scale :: Int -> Point -> Point
+scale n = fmap (* n)
 
 data Ship1 = Ship1 {loc :: Point, dir :: Point} deriving (Show)
 
 step :: Ship1 -> Instruction -> Ship1
 step ship inst =
   case inst of
-    R n -> ship {dir = right (dir ship) n}
-    F n -> ship {loc = loc ship + fmap (* n) (dir ship)}
+    R n -> ship {dir = right n (dir ship)}
+    F n -> ship {loc = loc ship + scale n (dir ship)}
     Move d -> ship {loc = loc ship + d}
 
-right :: Point -> Int -> Point
-right x 0 = x
-right (V2 x y) n = right (V2 y (-x)) (n - 90)
+right :: Int -> Point -> Point
+right n =
+  case n of
+    0 -> id
+    90 -> turn
+    180 -> turn . turn
+    270 -> turn . turn . turn
+    360 -> id
+  where
+    turn (V2 x y) = V2 y (-x)
 
 manhattan :: Point -> Int
 manhattan (V2 x y) = abs x + abs y
@@ -62,8 +72,8 @@ data Ship2 = Ship2 {pos :: Point, wpt :: Point} deriving (Show)
 step2 :: Ship2 -> Instruction -> Ship2
 step2 ship inst =
   case inst of
-    R n -> ship {wpt = right (wpt ship) n}
-    F n -> ship {pos = pos ship + fmap (* n) (wpt ship)}
+    R n -> ship {wpt = right n (wpt ship)}
+    F n -> ship {pos = pos ship + scale n (wpt ship)}
     Move d -> ship {wpt = wpt ship + d}
 
 part2 :: Problem -> Int
