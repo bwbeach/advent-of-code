@@ -6,6 +6,7 @@ import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Tuple (swap)
+import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -137,3 +138,33 @@ findMatches as bs matches =
           b <- bs,
           matches a b
       ]
+
+-- | Removes all elements of the first list from the second list.
+--
+-- >>> removeAll [1, 3, 5] [2, 3, 4, 5, 6]
+-- [2,4,6]
+removeAll :: (Eq a) => [a] -> [a] -> [a]
+removeAll as = filter (not . (`elem` as))
+
+-- | Repeatedly applies findMatches until all items are paired up.
+--
+-- >>> solveMatches ['a', 'b', 'c'] [1, 2, 3] (\c n -> (c, n) `elem` [('a', 1), ('a', 2), ('b', 2), ('c', 1), ('c', 3)])
+-- [('b',2),('c',3),('a',1)]
+solveMatches ::
+  (Ord a, Ord b, Show a, Show b) =>
+  [a] -> -- Things on the left side
+  [b] -> -- Things on the right side
+  (a -> b -> Bool) -> -- Predicate for testing match of left thing with right thing
+  [(a, b)] -- Matches where either side has only one possible choice
+solveMatches [] [] _ = []
+solveMatches (_ : _) [] _ = error "mismatched counts"
+solveMatches [] (_ : _) _ = error "mismatched counts"
+solveMatches as bs matches =
+  if null firstBatch
+    then error "no solution"
+    else firstBatch ++ theRest
+  where
+    firstBatch = findMatches as bs matches
+    as' = removeAll (map fst firstBatch) as
+    bs' = removeAll (map snd firstBatch) bs
+    theRest = solveMatches as' bs' matches
