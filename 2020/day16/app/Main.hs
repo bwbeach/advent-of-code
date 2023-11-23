@@ -1,12 +1,11 @@
 module Main where
 
 import Advent (only, run)
-import Data.List (foldl')
+import Data.List (foldl', isPrefixOf)
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Tuple (swap)
-import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -64,7 +63,23 @@ part1 problem =
     allRanges = concat . ranges $ problem
 
 part2 :: Problem -> Int
-part2 = length . ranges
+part2 problem =
+  product . map ((mine problem !!) . (nameToNumber M.!)) . filter ("departure" `isPrefixOf`) . M.keys $ nameToRanges
+  where
+    nameToRanges = ranges problem
+    numberToValues :: MapToSet Int Int
+    numberToValues = mtsFromList . concatMap (zip [0 ..]) . validTickets $ problem
+    nameToNumber = M.fromList namesAndNumbers
+    namesAndNumbers = solveMatches (M.keys nameToRanges) (M.keys numberToValues) compatible
+    compatible name number = all (`inRanges` (nameToRanges M.! name)) (numberToValues M.! number)
+
+validTickets :: Problem -> [Ticket]
+validTickets problem =
+  filter isTicketValid . nearby $ problem
+  where
+    isTicketValid = all inAnyRange
+    inAnyRange n = any (inRange n) allRanges
+    allRanges = concat . ranges $ problem
 
 {-
   MapToSet is like a Map, but holds a Set of values for each key.
