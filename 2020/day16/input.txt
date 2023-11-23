@@ -1,3 +1,5 @@
+"departure"
+
 departure location: 31-538 or 546-960
 departure station: 39-660 or 673-960
 departure platform: 35-731 or 745-968

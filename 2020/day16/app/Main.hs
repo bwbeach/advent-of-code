@@ -24,7 +24,8 @@ inRanges n = any (inRange n)
 type Ticket = [Int]
 
 data Problem = Problem
-  { ranges :: M.Map String [Range],
+  { prefix :: String,
+    ranges :: M.Map String [Range],
     mine :: Ticket,
     nearby :: [Ticket]
   }
@@ -32,9 +33,9 @@ data Problem = Problem
 
 parse :: String -> Problem
 parse s =
-  Problem {ranges = rs, mine = m, nearby = ns}
+  Problem {prefix = read p, ranges = rs, mine = m, nearby = ns}
   where
-    [a, b, c] = splitOn "\n\n" s
+    [p, a, b, c] = splitOn "\n\n" s
     rs = M.fromList . map parseRange . lines $ a
     m = parseTicket . last . lines $ b
     ns = map parseTicket . drop 1 . lines $ c
@@ -64,7 +65,7 @@ part1 problem =
 
 part2 :: Problem -> Int
 part2 problem =
-  product . map ((mine problem !!) . (nameToNumber M.!)) . filter ("departure" `isPrefixOf`) . M.keys $ nameToRanges
+  product . map ((mine problem !!) . (nameToNumber M.!)) . filter (prefix problem `isPrefixOf`) . M.keys $ nameToRanges
   where
     nameToRanges = ranges problem
     numberToValues :: MapToSet Int Int
