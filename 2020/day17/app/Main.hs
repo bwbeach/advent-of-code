@@ -66,20 +66,25 @@ instance ConwayPoint PointN where
 point3From2 :: Point -> PointN
 point3From2 (V2 x y) = PointN [x, y, 0]
 
-type Problem = S.Set PointN
+point4From2 :: Point -> PointN
+point4From2 (V2 x y) = PointN [x, y, 0, 0]
+
+type Problem = [Point]
 
 parse :: String -> Problem
 parse =
-  S.fromList . map (point3From2 . fst) . M.toList . gridMap . gridParse . replace '.' ' '
+  map fst . M.toList . gridMap . gridParse . replace '.' ' '
   where
     replace a b = map (\x -> if x == a then b else x)
 
 part1 :: Problem -> Int
 part1 =
-  length . S.toList . (!! 6) . conway rule
-  where
-    rule False n = n == 3
-    rule True n = n == 2 || n == 3
+  length . S.toList . (!! 6) . conway rule . S.fromList . map point3From2
+
+rule :: (Eq a, Num a) => Bool -> a -> Bool
+rule False n = n == 3
+rule True n = n == 2 || n == 3
 
 part2 :: Problem -> Int
-part2 = length . S.toList
+part2 =
+  length . S.toList . (!! 6) . conway rule . S.fromList . map point4From2
