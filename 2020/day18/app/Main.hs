@@ -41,8 +41,8 @@ expectChar c = do
         then return ()
         else error ("expected: " ++ [c])
 
+doOp :: Num a => Char -> a -> a -> a
 doOp '+' a b = a + b
-doOp '-' a b = a - b 
 doOp '*' a b = a * b 
 
 isJustOp :: Maybe Char -> Bool
@@ -50,7 +50,7 @@ isJustOp (Just c) = isOp c
 isJustOp Nothing = False 
 
 isOp :: Char -> Bool
-isOp c = c `elem` "+-*"
+isOp c = c `elem` "+*"
 
 eval :: String -> Integer 
 eval =
@@ -77,5 +77,41 @@ eval =
                 | isDigit c -> return (read [c])
                 | otherwise -> error ("bad primary: " ++ [c])
 
-part2 :: Problem -> Int
-part2 = length
+part2 :: Problem -> Integer
+part2 = sum . map eval2
+
+eval2 :: String -> Integer 
+eval2 =
+    evalState stuffAndStars
+    where
+        stuffAndStars = do
+            n <- stuffAndPlusses
+            stars n
+        stars n = do
+            c <- peekChar
+            if c == Just '*' 
+                then do
+                    c' <- readChar
+                    r <- stuffAndPlusses
+                    stars (n * r)
+                else return n
+        stuffAndPlusses = do
+            n <- primary
+            plusses n
+        plusses n = do
+            c <- peekChar
+            if c == Just '+' 
+                then do
+                    c' <- readChar
+                    r <- primary
+                    plusses (n + r)
+                else return n
+        primary = do
+            c <- readChar
+            if
+                | c == '(' -> do
+                    n <- stuffAndStars 
+                    expectChar ')'
+                    return n
+                | isDigit c -> return (read [c])
+                | otherwise -> error ("bad primary: " ++ [c])
