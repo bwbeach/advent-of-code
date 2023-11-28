@@ -34,4 +34,4 @@ cp -v $gitroot/templates/answers.txt .
 
 # Add dependency on advent library
 echo "Adding dependency on advent"
-sed -i "" -e '/build-depends/s/$/, advent/' $1.cabal
+sed -i -e '/build-depends/s/$/, advent/' $1.cabal
