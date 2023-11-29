@@ -1,2 +1,3 @@
-test.txt ? ?
-input.txt ? ?
+test.txt 2 2
+other.txt 3 12
+input.txt 220 439

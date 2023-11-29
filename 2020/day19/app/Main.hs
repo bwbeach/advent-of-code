@@ -3,7 +3,6 @@ module Main where
 import Advent (run)
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
-
 import Debug.Trace
 
 main :: IO ()
@@ -49,7 +48,11 @@ part1 :: Problem -> Int
 part1 (grammar, codes) = length . filter (matches grammar [Nonterminal 0]) $ codes
 
 part2 :: Problem -> Int
-part2 = length . snd
+part2 (grammar, codes) =
+  length . filter (matches grammar' [Nonterminal 0]) $ codes
+  where
+    grammar' = ins "8: 42 | 42 8" . ins "11: 42 31 | 42 11 31" $ grammar
+    ins = uncurry M.insert . parseRule
 
 matches :: Grammar -> [Elem] -> String -> Bool
 matches _ [] s = null s
