@@ -27,7 +27,7 @@ ENV PATH="$HOME/.ghcup/bin:${PATH}"
 RUN ghcup install ghc 9.2.8 && ghcup set ghc 9.2.8
 
 # Build and run something, so cabal packages get installed 
-RUN /workspace/advent-of-code/first_build.sh
+RUN cabal install linear lens
 
 # Clean up
 # RUN apt-get clean && \
