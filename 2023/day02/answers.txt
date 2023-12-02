@@ -1,2 +1,2 @@
-test.txt 8 ?
-input.txt ? ?
+test.txt 8 2286
+input.txt 2285 77021
