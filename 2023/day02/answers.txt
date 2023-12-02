@@ -1,2 +1,2 @@
-test.txt ? ?
+test.txt 8 ?
 input.txt ? ?
