@@ -26,6 +26,9 @@ ENV PATH="$HOME/.ghcup/bin:${PATH}"
 # Switch to the version of GHC that I'm using
 RUN ghcup install ghc 9.2.8 && ghcup set ghc 9.2.8
 
+# Build and run something, so cabal packages get installed 
+RUN /workspace/advent-of-code/first_build.sh
+
 # Clean up
 # RUN apt-get clean && \
 #    rm -rf /var/lib/apt/lists/*
