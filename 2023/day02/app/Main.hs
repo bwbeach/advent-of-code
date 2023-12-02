@@ -20,8 +20,9 @@ parse = map parseLine . lines
 
 -- | Parses one input line.
 --
--- Example:
--- Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+-- >>> parseLine "Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red"
+-- (4,[[("green",1),("red",3),("blue",6)],[("green",3),("red",6)],[("green",3),("blue",15),("red",14)]])
+--
 parseLine :: String -> Game
 parseLine s =
   (gameNumber, draws)
