@@ -33,33 +33,58 @@ part2 :: Problem -> Int
 part2 g =
   sum . mapMaybe starToMaybeRatio $ stars
   where
+    -- Given a star location, return its gear ratio if it has two neighbors
     starToMaybeRatio p =
       if length neighboringNumbers == 2
         then Just (product neighboringNumbers)
         else Nothing
       where
         neighboringNumbers = starToNeigboringNumbers p
+
+    -- Given the location of a star, return the part number values next to it.
     starToNeigboringNumbers p =
       map (readPartNumber g) . filter (any (`elem` starNeighbors)) $ partNumbers
       where
         starNeighbors = neighbors p
+
+    -- All of the part numbers on the grid
     partNumbers = findPartNumbers g
+
+    -- All of the points that have stars
     stars = filter ((== '*') . getGridPoint g) points
+
+    -- All of the non-empty points on the grid
     points = M.keys . gridMap $ g
 
+-- | Find all of the part numbers in the grid, each one as a list of points where the digits are
 findPartNumbers :: Grid -> [[Point]]
 findPartNumbers g =
   filter isPartNumber . map pointsOfNumber . filter isStartOfNumber $ points
   where
+    -- All of the non-empty points in the grid
     points = M.keys . gridMap $ g
+
+    -- Is the given point the start of a number?
     isStartOfNumber p = gridHasDigit p && not (gridHasDigit (left p))
+
+    -- Does the grid have a digit at the given point?
     gridHasDigit p = isDigit . gridGet p $ g
+
+    -- Given the starting point of a number, return all of the points that hold the number
     pointsOfNumber = takeWhile gridHasDigit . iterate right
-    isPartNumber = any (isSymbol . get) . neighborsOfNumber
-    isSymbol c = not (isDigit c || c == ' ')
-    get = getGridPoint g
+
+    -- All of the neighbors of a number, and the number too (but that won't matter)
     neighborsOfNumber = S.toList . S.fromList . concatMap neighbors
 
+    -- A number is a part number if it's next to a symbol
+    isPartNumber = any (isSymbol . get) . neighborsOfNumber
+
+    -- Symbols are any thing that's not empty or a digit
+    isSymbol c = not (isDigit c || c == ' ')
+
+    get = getGridPoint g
+
+-- | Given the points that hold a number, return the number.
 readPartNumber :: Grid -> [Point] -> Int
 readPartNumber g = read . map (getGridPoint g)
 
