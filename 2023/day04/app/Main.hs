@@ -1,8 +1,14 @@
+{-# LANGUAGE TupleSections #-}
+
 module Main where
 
 import Advent (run)
+import Data.List (foldl')
+import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.List.Split (splitOn)
+
+import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -37,4 +43,15 @@ part1 =
          exp2 n = 2 * exp2 (n - 1)
 
 part2 :: Problem -> Int
-part2 = length
+part2 cards = 
+    sum . M.elems . foldl' runCard initial $ [1 .. length cards]
+    where 
+        initial = M.fromList . map (, 1) $ [1 .. length cards]
+        runCard s n = foldl' (bumpCard (s M.! n)) s [(n + 1) .. (n + cardScore n)]
+        bumpCard i s n = M.insert n ((s M.! n) + i) s
+        cardScore n = 
+            length . filter (`S.member` w) . S.toList $ h 
+            where 
+                (w, h) = cardMap M.! n
+        cardMap = M.fromList . map (\(n, w, h) -> (n, (w, h))) $ cards
+
