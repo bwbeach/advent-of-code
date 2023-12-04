@@ -17,6 +17,8 @@ module Advent
     gridParse,
     life,
     memoize,
+    neighbors,
+    neighborsAndSelf,
     runMemoize,
     only,
     run,
@@ -117,6 +119,18 @@ only as = error ("expected exactly one: " ++ show as)
 
 -- | A point on a plane of Ints
 type Point = V2 Int
+
+-- | All of the neighbors of a point, but not the point itself
+neighbors :: Point -> [Point]
+neighbors p = filter (/= p) . neighbors $ p
+
+-- | All the neighbors of a point AND the point itself.
+neighborsAndSelf :: Point -> [Point]
+neighborsAndSelf p =
+  [ p + V2 dx dy
+    | dx <- [(-1) .. 1],
+      dy <- [(-1) .. 1]
+  ]
 
 -- | A rectangle on a plane of Ints.
 --
