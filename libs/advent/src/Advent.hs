@@ -122,7 +122,7 @@ type Point = V2 Int
 
 -- | All of the neighbors of a point, but not the point itself
 neighbors :: Point -> [Point]
-neighbors p = filter (/= p) . neighbors $ p
+neighbors p = filter (/= p) . neighborsAndSelf $ p
 
 -- | All the neighbors of a point AND the point itself.
 neighborsAndSelf :: Point -> [Point]

@@ -1,6 +1,14 @@
 module Main where
 
-import Advent (Grid (..), Point, gridGet, gridMap, gridParse, run)
+import Advent
+  ( Grid (..),
+    Point,
+    gridGet,
+    gridMap,
+    gridParse,
+    neighbors,
+    run,
+  )
 import Data.Char (isDigit)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, mapMaybe)
@@ -57,16 +65,6 @@ readPartNumber g = read . map (getGridPoint g)
 
 getGridPoint :: Grid -> Point -> Char
 getGridPoint g p = gridGet p g
-
-neighbors :: Point -> [Point]
-neighbors p = filter (/= p) . neighbors $ p
-
-neighborsAndSelf :: Point -> [Point] 
-neighborsAndSelf p =
-  [ p + V2 dx dy
-    | dx <- [(-1) .. 1],
-      dy <- [(-1) .. 1]
-  ]
 
 left :: Point -> Point
 left p = p + V2 (-1) 0
