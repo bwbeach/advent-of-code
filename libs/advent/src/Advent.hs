@@ -15,6 +15,7 @@ module Advent
     gridSet,
     gridMap,
     gridParse,
+    gridToList,
     life,
     memoize,
     neighbors,
@@ -180,6 +181,10 @@ gridSet p c (Grid m) =
 -- | Extracts the map from a Grid
 gridMap :: Grid -> M.Map (V2 Int) Char
 gridMap (Grid m) = m
+
+-- | Returns the contents of a grid as a list 
+gridToList :: Grid -> [(V2 Int, Char)]
+gridToList (Grid m) = M.toList m
 
 -- | Bounds of a grid: upper left corner and lower right corner
 gridBounds :: Grid -> (V2 Int, V2 Int)

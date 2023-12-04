@@ -6,6 +6,7 @@ import Advent
     gridGet,
     gridMap,
     gridParse,
+    gridToList,
     neighbors,
     run,
   )
@@ -51,10 +52,7 @@ part2 g =
     partNumbers = findPartNumbers g
 
     -- All of the points that have stars
-    stars = filter ((== '*') . getGridPoint g) points
-
-    -- All of the non-empty points on the grid
-    points = M.keys . gridMap $ g
+    stars = map fst . filter ((== '*') . snd) . gridToList $ g
 
 -- | Find all of the part numbers in the grid, each one as a list of points where the digits are
 findPartNumbers :: Grid -> [[Point]]
