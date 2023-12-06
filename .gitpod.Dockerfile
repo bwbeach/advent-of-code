@@ -21,13 +21,13 @@ RUN sudo apt-get -y install \
 RUN curl https://get-ghcup.haskell.org -sSf | sh
 
 # Add ghcup to the PATH
-ENV PATH="$HOME/.ghcup/bin:${PATH}"
+ENV PATH="$HOME/.ghcup/bin:$HOME/.cabal/bin:${PATH}"
 
 # Switch to the version of GHC that I'm using
 RUN ghcup install ghc 9.2.8 && ghcup set ghc 9.2.8
 
-# Build and run something, so cabal packages get installed 
-RUN cabal install linear lens
+# Install some packages
+RUN cabal install linear lens doctest
 
 # Clean up
 # RUN apt-get clean && \
