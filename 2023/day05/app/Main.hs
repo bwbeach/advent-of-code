@@ -90,15 +90,27 @@ part2 problem = 0
   --   pairs (a : b : cs) = (a, b) : pairs cs
 
 -- | Given a list of ranges and a Mapping, return the result of mapping all the numbers in the ranges as a list of ranges. 
--- mapRanges ::  Mapping -> [(Int, Int)] -> [(Int, Int)]
--- mapRanges mapping = normalizeRanges . concatMap (mapRange mapping)
+mapRanges ::  Mapping -> [(Int, Int)] -> [(Int, Int)]
+mapRanges mapping = normalizeRanges . concatMap (mapRange mapping)
 
--- mapRange :: Mapping -> (Int, Int) -> [(Int, Int)]
--- mapRange mapping r =
---   go r (ranges mapping) 
---   where 
---     go r [] = [r] 
---     go (a, b) {}
+-- | Maps one range given a set of mappings
+--
+-- >>> mapRange (Mapping {source="a", dest="b", ranges=[((2,3),10)]}) (1, 10)
+-- [(1,1),(12,13),(4,10)]
+--
+-- >>> mapRange (Mapping {source="a", dest="b", ranges=[((2,13),10)]}) (1, 10)
+-- [(1,1),(12,20)]
+mapRange :: Mapping -> (Int, Int) -> [(Int, Int)]
+mapRange mapping r =
+  go r (ranges mapping) 
+  where 
+    go (a, b) _ | b < a = []
+    go r [] = [r] 
+    go (a, b) (((c, d), x) : ms) 
+      | b < c = [(a, b)]
+      | d < a = go (a, b) ms
+      | a < c = (a, c - 1) : go (c, b) (((c, d), x) : ms)
+      | otherwise = (a + x, min b d + x) : go (d + 1, b) (((c, d), x) : ms)
 
 -- | Given a list of ranges (represented as pairs), resolves overlaps
 --
