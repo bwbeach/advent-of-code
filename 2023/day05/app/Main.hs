@@ -1,9 +1,12 @@
 module Main where
 
 import Advent (run)
+import Data.List (foldl')
 import Data.List.Extra (dropEnd, find, sort)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromJust, mapMaybe)
+
+import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -66,31 +69,39 @@ parseMapping s =
       ((srcStart, srcStart + rangeLen - 1), destStart - srcStart)
       where
         [a, b, c] = words s
-        destStart = read a 
-        srcStart = read b 
+        destStart = read a
+        srcStart = read b
         rangeLen = read c
 
 part1 :: Problem -> Int
-part1 problem = minimum . map (mapToLocation problem "seed") . fst $ problem
-
-mapToLocation :: Problem -> String -> Int -> Int
-mapToLocation _ "location" n = n
-mapToLocation problem from n =
-  mapToLocation problem (dest m) (mappingMap n m)
+part1 problem =
+  minimum . map mapOneSeed . fst $ problem
   where
-    m = fromJust $ find ((== from) . source) (snd problem)
+    maps = mappingSequence problem
+    mapOneSeed s = foldl' mappingMap s maps
+
+-- | Returns the sequence of mappings to go from seed to location.
+mappingSequence :: Problem -> [Mapping]
+mappingSequence (_, unordered) =
+  go "seed"
+  where
+    go "location" = []
+    go from = m : go (dest m)
+      where
+        m = fromJust $ find ((== from) . source) unordered
 
 part2 :: Problem -> Int
-part2 problem = 0
-  -- minimum . map (mapToLocation problem "seed") . concatMap convertRange . pairs . fst $ problem
-  -- where
-  --   startingRanges = pairs . fst $ problem
-  --   convertRange (a, b) = [a .. (a + b - 1)]
-  --   pairs [] = []
-  --   pairs (a : b : cs) = (a, b) : pairs cs
+part2 problem = 
+  minimum . map fst . concatMap (mapOneRange . pairToRange) . pairs . fst $ problem 
+  where 
+    pairToRange (a, b) = (a, a + b - 1)
+    mapOneRange r = foldl' (flip mapRanges) [r] maps   
+    maps = mappingSequence problem
+    pairs [] = []
+    pairs (a : b : cs) = (a, b) : pairs cs
 
--- | Given a list of ranges and a Mapping, return the result of mapping all the numbers in the ranges as a list of ranges. 
-mapRanges ::  Mapping -> [(Int, Int)] -> [(Int, Int)]
+-- | Given a list of ranges and a Mapping, return the result of mapping all the numbers in the ranges as a list of ranges.
+mapRanges :: Mapping -> [(Int, Int)] -> [(Int, Int)]
 mapRanges mapping = normalizeRanges . concatMap (mapRange mapping)
 
 -- | Maps one range given a set of mappings
@@ -102,11 +113,11 @@ mapRanges mapping = normalizeRanges . concatMap (mapRange mapping)
 -- [(1,1),(12,20)]
 mapRange :: Mapping -> (Int, Int) -> [(Int, Int)]
 mapRange mapping r =
-  go r (ranges mapping) 
-  where 
+  go r (ranges mapping)
+  where
     go (a, b) _ | b < a = []
-    go r [] = [r] 
-    go (a, b) (((c, d), x) : ms) 
+    go r [] = [r]
+    go (a, b) (((c, d), x) : ms)
       | b < c = [(a, b)]
       | d < a = go (a, b) ms
       | a < c = (a, c - 1) : go (c, b) (((c, d), x) : ms)
