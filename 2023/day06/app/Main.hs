@@ -1,7 +1,7 @@
 module Main where
 
 import Advent (run)
-import GHC.Float
+import GHC.Float (int2Double)
 
 main :: IO ()
 main = run parse part1 part2
