@@ -23,7 +23,7 @@ part1 :: Problem -> Integer
 part1 = product . map numPossible
 
 -- | The number of button press durations that go far enough. 
--- t is the time allowed for the race, and d is the record distance that must be matched or beaten
+-- t is the time allowed for the race, and d is the record distance that must be beaten
 -- Use the quadratic formula to solve x * (t - x) > d.  Round away from the answer and then
 -- add/subtract 1 to make it ">" and not ">=".
 numPossible :: Race -> Integer
