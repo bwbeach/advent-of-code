@@ -117,25 +117,29 @@ mapRange mapping r =
   where
     go (a, b) _ | b < a = []
     go r [] = [r]
-    go (a, b) (((c, d), x) : ms)
+    go (a, b) y@(((c, d), x) : ms)
       | b < c = [(a, b)]
       | d < a = go (a, b) ms
-      | a < c = (a, c - 1) : go (c, b) (((c, d), x) : ms)
-      | otherwise = (a + x, min b d + x) : go (d + 1, b) (((c, d), x) : ms)
+      | a < c = (a, c - 1) : go (c, b) y
+      | otherwise = (a + x, min b d + x) : go (d + 1, b) y
 
--- | Given a list of ranges (represented as pairs), resolves overlaps
+-- | Given a list of ranges (represented as pairs), sorts, then merges overlapping ranges
 --
 -- >>> normalizeRanges [(1, 4), (3, 9)]
 -- [(1,9)]
 --
 -- >>> normalizeRanges [(5, 8), (1, 4)]
--- [(1,4),(5,8)]
-normalizeRanges :: (Ord a) => [(a, a)] -> [(a, a)]
+-- WAS NOW [(1,8)]
+-- NOW [(1,8)]
+--
+-- >>> normalizeRanges [(6, 8), (1, 4)]
+-- [(1,4),(6,8)]
+normalizeRanges :: (Num a, Ord a) => [(a, a)] -> [(a, a)]
 normalizeRanges =
   go . sort
   where
     go [] = []
     go [r] = [r]
     go ((a, b) : (c, d) : rs)
-      | b < c = (a, b) : go ((c, d) : rs)
+      | b < c - 1 = (a, b) : go ((c, d) : rs)
       | otherwise = go ((a, max b d) : rs)
