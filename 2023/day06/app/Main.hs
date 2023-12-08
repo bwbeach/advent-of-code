@@ -34,5 +34,12 @@ numPossible (t, d) =
         maxTime = ceiling ((int2Double t + s4ac) / 2) - 1
         s4ac = sqrt (int2Double (t * t - 4 * d))
 
-part2 :: Problem -> Int
-part2 = length
+part2 :: Problem -> Integer
+part2 problem = 
+    numPossible (t, d)
+    where
+        t = unkern times 
+        d = unkern distances 
+        (times, distances) = unzip problem
+        unkern = read . filter (/= ' ') . unwords . map show
+
