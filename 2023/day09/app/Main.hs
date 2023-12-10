@@ -22,8 +22,15 @@ extrapolateOne ns =
   if all (== 0) ns
     then 0
     else last ns + extrapolateOne (differences ns)
-  where
-    differences = map (uncurry (-) . swap) . pairs
+
+differences :: [Int] -> [Int]
+differences = map (uncurry (-) . swap) . pairs
 
 part2 :: Problem -> Int
-part2 = length
+part2 = sum . map extrapolateBack
+
+extrapolateBack :: [Int] -> Int
+extrapolateBack ns =
+  if all (== 0) ns
+    then 0
+    else head ns - extrapolateBack (differences ns)
