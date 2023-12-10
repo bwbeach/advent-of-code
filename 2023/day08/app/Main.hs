@@ -4,6 +4,7 @@ import Advent (run)
 import Data.List.Extra (dropEnd, scanl', takeEnd)
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
+import Data.Tuple (swap)
 
 main :: IO ()
 main = run parse part1 part2
@@ -28,17 +29,28 @@ part1 :: Problem -> Int
 part1 (turns, mapping) =
   if not (M.member "AAA" mapping)
     then 0 -- hack for second test case, which doesn't work for part 1
-    else
-        length . takeWhile (/= "ZZZ") . scanl' oneMove "AAA" . cycle $ turns
-        where
-            oneMove :: String -> Char -> String
-            oneMove from turn = (if turn == 'L' then fst else snd) (mapping M.! from)
+    else length . takeWhile (/= "ZZZ") . scanl' oneMove "AAA" . cycle $ turns
+  where
+    oneMove :: String -> Char -> String
+    oneMove from turn = (if turn == 'L' then fst else snd) (mapping M.! from)
 
-part2 :: Problem -> Int
+part2 :: Problem -> String
 part2 (turns, mapping) =
-    length . takeWhile notAllZ . scanl' oneMoveAll allA . cycle $ turns 
-    where 
-        allA = filter ((== "A") . takeEnd 1) . M.keys $ mapping
-        notAllZ = not . all ((== "Z") . takeEnd 1)
-        oneMoveAll places turn = map (oneMove turn) places 
-        oneMove turn from = (if turn == 'L' then fst else snd) (mapping M.! from)
+  show . map firstFive $ allA
+  where
+    allA = filter ((== "A") . takeEnd 1) . M.keys $ mapping
+    firstFive start = take 5 . map (uncurry (-) . swap) . pairs . map fst . filter (isZ . snd) . zip [1..] . scanl' oneMove start . cycle $ turns
+    oneMove from turn = (if turn == 'L' then fst else snd) (mapping M.! from)
+    isZ = (== "Z") . takeEnd 1
+    pairs [] = []
+    pairs [_] = []
+    pairs (a : b : cs) = (a, b) : pairs (b : cs)
+
+-- part2 :: Problem -> Int
+-- part2 (turns, mapping) =
+--     length . takeWhile notAllZ . scanl' oneMoveAll allA . cycle $ turns
+--     where
+--         allA = filter ((== "A") . takeEnd 1) . M.keys $ mapping
+--         notAllZ = not . all ((== "Z") . takeEnd 1)
+--         oneMoveAll places turn = map (oneMove turn) places
+--         oneMove turn from = (if turn == 'L' then fst else snd) (mapping M.! from)
