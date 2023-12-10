@@ -1,2 +1,3 @@
-test.txt 6 ?
+test.txt 6 6
+other.txt 0 6
 input.txt 12169 ?
