@@ -1,3 +1,4 @@
-test.txt 4 ?
-other.txt 8 ?
-input.txt 6897 ?
+test.txt 4 1
+other.txt 8 1
+part2.txt 70 8
+input.txt 6897 367
