@@ -1,6 +1,6 @@
 module Main where
 
-import Advent (run)
+import Advent (memoize, run, runMemoize)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Tuple.Extra (second)
@@ -25,7 +25,7 @@ part1 :: Problem -> Int
 part1 =
   sum . traceShowId . map runOne
   where
-    runOne (s, ns) = length $ allMatches s (compilePattern ns)
+    runOne (s, ns) = matchCount s (compilePattern ns)
 
 part2 :: Problem -> Int
 part2 =
@@ -37,7 +37,7 @@ data PatternElem
   = Dot -- exactly one '.'
   | Dots -- zero or more '.'
   | Hash -- exactly one '#'
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 -- | Translate the list of numbers from the problem into a pattern
 --
@@ -48,24 +48,31 @@ compilePattern ns = [Dots] ++ intercalate [Dot, Dots] (map (`replicate` Hash) ns
 
 -- | Return all of the strings matching the input string and the pattern
 --
--- >>> allMatches "" []
--- [""]
+-- >>> matchCount "" []
+-- 1
 --
--- >>> allMatches "?" [Hash]
--- ["#"]
+-- >>> matchCount "?" [Hash]
+-- 1
 --
--- >>> allMatches "???.###" [Dots, Hash, Dot, Dots, Hash, Dot, Dots, Hash, Hash, Hash, Dots]
--- ["#.#.###"]
+-- >>> matchCount "???.###" [Dots, Hash, Dot, Dots, Hash, Dot, Dots, Hash, Hash, Hash, Dots]
+-- 1
 --
 --
--- >>> allMatches ".??..??...?##." [Dots, Hash, Dot, Dots, Hash, Dot, Dots, Hash, Hash, Hash, Dots]
--- WAS []
--- NOW [".#...#....###.",".#....#...###.","..#..#....###.","..#...#...###."]
-allMatches :: String -> [PatternElem] -> [String]
-allMatches "" [] = [""]
-allMatches ('.' : cs) (Dot : ps) = map ('.' :) (allMatches cs ps)
-allMatches ('?' : cs) (Dot : ps) = map ('.' :) (allMatches cs ps)
-allMatches ('#' : cs) (Hash : ps) = map ('#' :) (allMatches cs ps)
-allMatches ('?' : cs) (Hash : ps) = map ('#' :) (allMatches cs ps)
-allMatches cs (Dots : ps) = allMatches cs ps ++ allMatches cs (Dot : Dots : ps)
-allMatches _ _ = []
+-- >>> matchCount ".??..??...?##." [Dots, Hash, Dot, Dots, Hash, Dot, Dots, Hash, Hash, Hash, Dots]
+-- 4
+matchCount :: String -> [PatternElem] -> Int
+matchCount c p =
+  runMemoize go (c, p)
+  where
+    go = memoize go'
+
+    go' ("", []) = return 1
+    go' ('.' : cs, Dot : ps) = go (cs, ps)
+    go' ('?' : cs, Dot : ps) = go (cs, ps)
+    go' ('#' : cs, Hash : ps) = go (cs, ps)
+    go' ('?' : cs, Hash : ps) = go (cs, ps)
+    go' (cs, Dots : ps) = do
+      a <- go (cs, ps)
+      b <- go (cs, Dot : Dots : ps)
+      return (a + b)
+    go' _ = return 0
