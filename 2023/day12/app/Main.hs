@@ -23,9 +23,15 @@ parse =
 
 part1 :: Problem -> Int
 part1 =
-  sum . map runOne
+  sum . traceShowId . map runOne
   where
     runOne (s, ns) = length $ allMatches s (compilePattern ns)
+
+part2 :: Problem -> Int
+part2 =
+  part1 . map unfold
+  where
+    unfold (a, b) = (intercalate "?" . replicate 5 $ a, concat . replicate 5 $ b)
 
 data PatternElem
   = Dot -- exactly one '.'
@@ -63,6 +69,3 @@ allMatches ('#' : cs) (Hash : ps) = map ('#' :) (allMatches cs ps)
 allMatches ('?' : cs) (Hash : ps) = map ('#' :) (allMatches cs ps)
 allMatches cs (Dots : ps) = allMatches cs ps ++ allMatches cs (Dot : Dots : ps)
 allMatches _ _ = []
-
-part2 :: Problem -> Int
-part2 = length
