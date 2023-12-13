@@ -4,7 +4,6 @@ import Advent (memoize, run, runMemoize)
 import Data.List (intercalate)
 import Data.List.Split (splitOn)
 import Data.Tuple.Extra (second)
-import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -23,7 +22,7 @@ parse =
 
 part1 :: Problem -> Int
 part1 =
-  sum . traceShowId . map runOne
+  sum . map runOne
   where
     runOne (s, ns) = matchCount s (compilePattern ns)
 
