@@ -1,2 +1,2 @@
-test.txt 405 ?
-input.txt 43614 ?
+test.txt 405 400
+input.txt 43614 36771
