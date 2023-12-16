@@ -22,6 +22,7 @@ module Advent
     neighborsAndSelf,
     runMemoize,
     only,
+    replace,
     run,
   )
 where
@@ -182,7 +183,7 @@ gridSet p c (Grid m) =
 gridMap :: Grid -> M.Map (V2 Int) Char
 gridMap (Grid m) = m
 
--- | Returns the contents of a grid as a list 
+-- | Returns the contents of a grid as a list
 gridToList :: Grid -> [(V2 Int, Char)]
 gridToList (Grid m) = M.toList m
 
@@ -282,3 +283,10 @@ lifeStep neighbors newCellState g =
 -- | Sequence of states of a conway-life-style simulation
 life :: (LifeGrid g) => (g -> Point -> [Point]) -> (Char -> [Char] -> Char) -> g -> [g]
 life neighbors newCellState = iterate (lifeStep neighbors newCellState)
+
+-- | In a list, replace all occurrances of `a` with `b`
+--
+-- >>> replace 2 9 [1, 2, 3]
+-- [1,9,3]
+replace :: (Eq a) => a -> a -> [a] -> [a]
+replace a b = map (\x -> if x == a then b else x)
