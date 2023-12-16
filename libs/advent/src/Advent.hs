@@ -139,7 +139,7 @@ neighborsAndSelf p =
 -- The bounds of the rectangle are inclusive.
 data Rectangle
   = Rectangle Point Point
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 -- | Does the rectangle contain the given point?
 rectangleContains :: Rectangle -> Point -> Bool
@@ -162,7 +162,7 @@ rectanglePoints (Rectangle (V2 x0 y0) (V2 x1 y1)) =
 --
 -- A grid is stored as a map from position to non-space character at
 -- that position.
-newtype Grid = Grid (M.Map (V2 Int) Char) deriving (Eq, Show, Read)
+newtype Grid = Grid (M.Map (V2 Int) Char) deriving (Eq, Ord, Read, Show)
 
 -- | An empty grid, with no cells filled.
 gridEmpty :: Grid

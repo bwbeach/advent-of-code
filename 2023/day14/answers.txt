@@ -1,2 +1,2 @@
-test.txt 136 ?
-input.txt 109939 ?
+test.txt 136 64
+input.txt 109939 101010
