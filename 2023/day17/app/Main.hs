@@ -34,8 +34,14 @@ parse text =
     readChar c = read [c]
 
 part1 :: Problem -> Int
-part1 problem =
-  minimum . map (traceShowId . costWithInitialDirection problem (1, 3)) $ [V2 1 0, V2 0 1]
+part1 problem = minCost problem (1, 3)
+
+part2 :: Problem -> Int
+part2 problem = minCost problem (4, 10)
+
+minCost :: Problem -> (Int, Int) -> Int
+minCost problem minMaxStraight =
+  minimum . map (traceShowId . costWithInitialDirection problem minMaxStraight) $ [V2 1 0, V2 0 1]
 
 costWithInitialDirection :: Problem -> (Int, Int) -> Point -> Int
 costWithInitialDirection problem turnLimits dir0 =
@@ -48,9 +54,6 @@ costWithInitialDirection problem turnLimits dir0 =
     estimate = score problem
     found Pos {block = b} = b == V2 w h
     initial = Pos {block = V2 1 1, dir = dir0, straightCount = 0}
-
-part2 :: Problem -> Int
-part2 = length
 
 tracePath :: Problem -> [Pos] -> a -> a
 tracePath (_, m) path =
