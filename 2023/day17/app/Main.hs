@@ -11,7 +11,7 @@ import Advent
   )
 import Algorithm.Search (aStar)
 import qualified Data.Map.Strict as M
-import Data.Maybe (catMaybes)
+import Data.Maybe (mapMaybe)
 import Data.Tuple.Extra (second)
 import Debug.Trace
 import Linear.V2 (V2 (..))
@@ -35,6 +35,8 @@ parse text =
 
 part1 :: Problem -> Int
 part1 problem =
+  -- the first move may involve a turn, so this searches both possible
+  -- initial moves.
   costWithInitialDirection problem (V2 1 0)
 
 costWithInitialDirection :: Problem -> Point -> Int
@@ -78,30 +80,18 @@ data Pos = Pos
 -- | The places you can move next from a given position.
 choices :: Problem -> Pos -> [Pos]
 choices ((w, h), m) p0 =
-  catMaybes [left, right, straight]
+  mapMaybe maybeChoice [(turnLeft, const 1), (turnRight, const 1), (id, (1 +))]
   where
-    dir0 = dir p0
-    block0 = block p0
-    leftDir = turnLeft dir0
-    leftBlock = block0 + leftDir
-    left =
-      case M.lookup leftBlock m of
-        Nothing -> Nothing
-        Just _ -> Just p0 {block = leftBlock, dir = leftDir, straightCount = 1}
-    rightDir = turnRight dir0
-    rightBlock = block0 + rightDir
-    right =
-      case M.lookup rightBlock m of
-        Nothing -> Nothing
-        Just _ -> Just p0 {block = rightBlock, dir = rightDir, straightCount = 1}
-    straightDir = dir0
-    straightBlock = block0 + straightDir
-    straight =
-      if straightCount p0 == 3
-        then Nothing
-        else case M.lookup straightBlock m of
-          Nothing -> Nothing
-          Just _ -> Just p0 {block = straightBlock, dir = dir0, straightCount = straightCount p0 + 1}
+    -- See if turning by `dirFcn` and updating the straightCount with `straightFcn` makes a legal choice.
+    -- A choice is legal if it stays on the map and doesn't go straight more than 3 blocks.
+    maybeChoice (dirFcn, straightFcn) =
+      if b' `M.member` m && s' <= 3
+        then Just p0 {block = b', dir = d', straightCount = s'}
+        else Nothing
+      where
+        d' = dirFcn (dir p0)
+        b' = block p0 + d'
+        s' = straightFcn (straightCount p0)
 
 -- | Score a Pos for A-star search.
 -- The score must not exceed the actual score.  Higher is better for search.
