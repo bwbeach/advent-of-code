@@ -5,6 +5,7 @@ module Main where
 import Advent
   ( Grid (..),
     Point,
+    gridBounds,
     gridGet,
     gridMap,
     gridParse,
@@ -25,13 +26,21 @@ main = run parse part1 part2
 
 part1 :: Problem -> Int
 part1 problem =
-  S.size . S.fromList . map snd $ reachableVertices graph start
+  illuminated graph (E, V2 1 1)
   where
-    start = (E, V2 1 1)
     graph = buildGraph problem
 
 part2 :: Problem -> Int
-part2 = length . M.toList . gridMap
+part2 problem =
+  maximum . map (illuminated graph) $ allStarts
+  where
+    allStarts = fromTop ++ fromBottom ++ fromLeft ++ fromRight
+    fromTop = map (\x -> (S, V2 x y0)) [x0 .. x1]
+    fromBottom = map (\x -> (N, V2 x y1)) [x0 .. x1]
+    fromLeft = map (\y -> (E, V2 x0 y)) [y0 .. y1]
+    fromRight = map (\y -> (W, V2 x1 y)) [y0 .. y1]
+    (V2 x0 y0, V2 x1 y1) = gridBounds problem
+    graph = buildGraph problem
 
 type Problem = Grid
 
@@ -52,6 +61,11 @@ fourDirections = [N, S, E, W]
 -- | A node in the graph: heading a given direction into a location in the grid.
 -- Because the light is coming into the point given, that point is *energized*.
 type Node = (Dir, Point)
+
+-- | Given a starting place, how many tiles are illuminated?
+illuminated :: Graph Node Node -> Node -> Int
+illuminated graph start =
+  S.size . S.fromList . map snd $ reachableVertices graph start
 
 -- | Build a graph of Nodes from the grid of mirrors
 buildGraph :: Grid -> Graph Node Node
