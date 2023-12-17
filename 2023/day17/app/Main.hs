@@ -35,17 +35,15 @@ parse text =
 
 part1 :: Problem -> Int
 part1 problem =
-  -- the first move may involve a turn, so this searches both possible
-  -- initial moves.
-  costWithInitialDirection problem (V2 1 0)
+  minimum . map (traceShowId . costWithInitialDirection problem (1, 3)) $ [V2 1 0, V2 0 1]
 
-costWithInitialDirection :: Problem -> Point -> Int
-costWithInitialDirection problem dir0 =
+costWithInitialDirection :: Problem -> (Int, Int) -> Point -> Int
+costWithInitialDirection problem turnLimits dir0 =
   tracePath problem path cost
   where
     ((w, h), m) = problem
     Just (cost, path) = aStar neighbors transCost estimate found initial
-    neighbors = choices problem
+    neighbors = choices problem turnLimits
     transCost _ Pos {block = b} = m M.! b
     estimate = score problem
     found Pos {block = b} = b == V2 w h
@@ -77,21 +75,28 @@ data Pos = Pos
   }
   deriving (Eq, Ord, Show)
 
+-- | Types of moves
+data MoveType = Straight | Turn deriving (Show)
+
 -- | The places you can move next from a given position.
-choices :: Problem -> Pos -> [Pos]
-choices ((w, h), m) p0 =
-  mapMaybe maybeChoice [(turnLeft, const 1), (turnRight, const 1), (id, (1 +))]
+choices :: Problem -> (Int, Int) -> Pos -> [Pos]
+choices ((w, h), m) (minStraight, maxStraight) p0 =
+  mapMaybe maybeChoice [(turnLeft, Turn), (turnRight, Turn), (id, Straight)]
   where
-    -- See if turning by `dirFcn` and updating the straightCount with `straightFcn` makes a legal choice.
-    -- A choice is legal if it stays on the map and doesn't go straight more than 3 blocks.
-    maybeChoice (dirFcn, straightFcn) =
-      if b' `M.member` m && s' <= 3
+    maybeChoice (dirFcn, moveType) =
+      if b' `M.member` m && moveOk
         then Just p0 {block = b', dir = d', straightCount = s'}
         else Nothing
       where
+        s = straightCount p0
+        moveOk = case moveType of
+          Straight -> s < maxStraight
+          Turn -> minStraight <= s
         d' = dirFcn (dir p0)
         b' = block p0 + d'
-        s' = straightFcn (straightCount p0)
+        s' = case moveType of
+          Straight -> 1 + s
+          Turn -> 1
 
 -- | Score a Pos for A-star search.
 -- The score must not exceed the actual score.  Higher is better for search.
