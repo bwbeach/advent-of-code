@@ -13,7 +13,7 @@ import Algorithm.Search (aStar)
 import qualified Data.Map.Strict as M
 import Data.Maybe (mapMaybe)
 import Data.Tuple.Extra (second)
-import Debug.Trace
+import Debug.Trace (trace, traceShowId)
 import Linear.V2 (V2 (..))
 
 main :: IO ()
@@ -43,18 +43,26 @@ minCost :: Problem -> (Int, Int) -> Int
 minCost problem minMaxStraight =
   minimum . map (traceShowId . costWithInitialDirection problem minMaxStraight) $ [V2 1 0, V2 0 1]
 
+-- | What's the minimum cost starting out in the given direction?
 costWithInitialDirection :: Problem -> (Int, Int) -> Point -> Int
-costWithInitialDirection problem turnLimits dir0 =
+costWithInitialDirection problem minMaxStraight@(minStraight, maxStraight) dir0 =
   tracePath problem path cost
   where
     ((w, h), m) = problem
     Just (cost, path) = aStar neighbors transCost estimate found initial
-    neighbors = choices problem turnLimits
+    -- possible next node given a starting node
+    neighbors = choices problem minMaxStraight
+    -- cost of transitioning from one node to another is the value at the destination
     transCost _ Pos {block = b} = m M.! b
+    -- lower boind on the cost to get from a given place to the goal
     estimate = score problem
-    found Pos {block = b} = b == V2 w h
+    -- is a Pos the goal?
+    found Pos {block = b, straightCount = s} =
+      b == V2 w h && minStraight <= s && s <= maxStraight
+    -- the starting place
     initial = Pos {block = V2 1 1, dir = dir0, straightCount = 0}
 
+-- | Print the selected path
 tracePath :: Problem -> [Pos] -> a -> a
 tracePath (_, m) path =
   trace formattedPath
@@ -86,17 +94,24 @@ choices :: Problem -> (Int, Int) -> Pos -> [Pos]
 choices ((w, h), m) (minStraight, maxStraight) p0 =
   mapMaybe maybeChoice [(turnLeft, Turn), (turnRight, Turn), (id, Straight)]
   where
+    -- Returns the new Pos if this move is a valid choice
     maybeChoice (dirFcn, moveType) =
-      if b' `M.member` m && moveOk
+      -- move is valid if we're within the min-max-straight constraint, and stay on the board
+      if moveOk && b' `M.member` m
         then Just p0 {block = b', dir = d', straightCount = s'}
         else Nothing
       where
+        -- number of times we've gone straight to get to p0
         s = straightCount p0
+        -- is this kind of move OK?
         moveOk = case moveType of
           Straight -> s < maxStraight
           Turn -> minStraight <= s
+        -- new direction
         d' = dirFcn (dir p0)
+        -- new position
         b' = block p0 + d'
+        -- new straight count
         s' = case moveType of
           Straight -> 1 + s
           Turn -> 1
