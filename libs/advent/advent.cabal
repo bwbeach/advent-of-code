@@ -20,7 +20,7 @@ maintainer:         coder@beachfamily.net
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  Advent
+    exposed-modules:  Advent, RangeMap
 
     -- Modules included in this library but not exported.
     -- other-modules:
