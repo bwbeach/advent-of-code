@@ -23,6 +23,7 @@ module RangeMap
     rgInsert,
     rmEmpty,
     rmRangeEnds,
+    rmSingleton,
     rmToList,
   )
 where
@@ -74,6 +75,10 @@ rangeContains (Range a b) (Range c d) = a <= c && d <= b
 rangeBefore :: (Ord a) => Range a -> Range a -> Bool
 rangeBefore (Range _ b) (Range c _) = b < c
 
+-- | Does the first range start before the second range starts?
+rangeStartsBefore :: (Ord a) => Range a -> Range a -> Bool
+rangeStartsBefore (Range a _) (Range c _) = a < c
+
 -- | Union of two overlapping ranges
 rangeUnion :: (Ord a, Show a) => Range a -> Range a -> Range a
 rangeUnion r1@(Range a b) r2@(Range c d)
@@ -106,6 +111,10 @@ instance (Show k, Show v) => Show (RangeMap k v) where
 -- rmFromList []
 rmEmpty :: RangeMap k v
 rmEmpty = RangeMap []
+
+-- | A range map with one range
+rmSingleton :: Range k -> v -> RangeMap k v
+rmSingleton k v = RangeMap [(k, v)]
 
 -- | Build an RangeMap from a list of (range, value) pairs.
 rmFromList :: (Integral k, Eq v) => [(Range k, v)] -> RangeMap k v
@@ -185,6 +194,56 @@ rmUpdate k f (RangeMap oldKvs) =
       | b < d = (k, f (Just v0)) `rmCons` ((Range (b + 1) d, v0) : kvs)
       -- New range is longer than existing one
       | otherwise = (k0, f (Just v0)) `rmCons` go (Range (d + 1) b) f kvs
+
+-- | Merge two RangeMaps using a function that combines their values, if present.
+--
+-- >>> rmMerge (\x y -> (+) <$> x <*> y) (rmSingleton (Range 1 6) 3) (rmSingleton (Range 3 8) 5)
+-- rmFromList [(Range 3 6,8)]
+--
+-- >>> rmMerge (\x y -> x) (rmSingleton (Range 1 6) 3) (rmSingleton (Range 3 8) 5)
+-- rmFromList [(Range 1 6,3)]
+--
+-- >>> rmMerge (\x y -> y) (rmSingleton (Range 1 6) 3) (rmSingleton (Range 3 8) 5)
+-- rmFromList [(Range 3 8,5)]
+--
+-- >>> rmMerge (\x y -> Just (fromMaybe 0 x + fromMaybe 0 y)) (rmSingleton (Range 1 6) 3) (rmSingleton (Range 3 8) 5)
+-- rmFromList [(Range 1 2,3),(Range 3 6,8),(Range 7 8,5)]
+--
+-- >>> rmMerge (\x y -> Just (fromMaybe 0 x + fromMaybe 0 y)) (rmSingleton (Range 3 8) 5) (rmSingleton (Range 1 6) 3)
+-- rmFromList [(Range 1 2,3),(Range 3 6,8),(Range 7 8,5)]
+--
+-- >>> rmMerge (\x y -> Just (fromMaybe 0 x + fromMaybe 0 y)) (rmSingleton (Range 1 3) 3) (rmSingleton (Range 5 7) 5)
+-- rmFromList [(Range 1 3,3),(Range 5 7,5)]
+--
+-- >>> rmMerge (\x y -> Just (fromMaybe 0 x + fromMaybe 0 y)) (rmSingleton (Range 5 7) 5) (rmSingleton (Range 1 3) 3)
+-- rmFromList [(Range 1 3,3),(Range 5 7,5)]
+--
+-- >>> rmMerge (\x y -> Just (fromMaybe 0 x + fromMaybe 0 y)) (rmSingleton (Range 1 3) 5) (rmSingleton (Range 1 3) 3)
+-- rmFromList [(Range 1 3,8)]
+rmMerge :: (Integral k, Eq z) => (Maybe x -> Maybe y -> Maybe z) -> RangeMap k x -> RangeMap k y -> RangeMap k z
+rmMerge f (RangeMap xKvs) (RangeMap yKvs) =
+  RangeMap (go xKvs yKvs)
+  where
+    go [] [] = []
+    go ((k, x) : xKvs) [] = (k, f (Just x) Nothing) `rmCons` go xKvs []
+    go [] ((k, y) : yKvs) = (k, f Nothing (Just y)) `rmCons` go [] yKvs
+    go ((kx@(Range a b), x) : xKvs) ((ky@(Range c d), y) : yKvs)
+      -- Left range fully before right range
+      | kx `rangeBefore` ky = (kx, f (Just x) Nothing) `rmCons` go xKvs ((ky, y) : yKvs)
+      -- Right range fully before left range
+      | ky `rangeBefore` kx = (ky, f Nothing (Just y)) `rmCons` go ((kx, x) : xKvs) yKvs
+      -- NOW WE KNOW: There is some overlap in the ranges
+      -- Left range partly before right range
+      | kx `rangeStartsBefore` ky = (Range a (c - 1), f (Just x) Nothing) `rmCons` go ((Range c b, x) : xKvs) ((ky, y) : yKvs)
+      -- Right range partly before left range
+      | ky `rangeStartsBefore` kx = (Range c (a - 1), f Nothing (Just y)) `rmCons` go ((kx, x) : xKvs) ((Range a d, y) : yKvs)
+      -- NOW WE KNOW: The two ranges start at the same place
+      -- Left range ends first
+      | b < d = (Range a b, f (Just x) (Just y)) `rmCons` go xKvs ((Range (b + 1) d, y) : yKvs)
+      -- Right range ends first
+      | d < b = (Range c d, f (Just x) (Just y)) `rmCons` go ((Range (d + 1) b, x) : xKvs) yKvs
+      -- NOW WE KNOW: Left and right ranges are the same
+      | otherwise = (kx, f (Just x) (Just y)) `rmCons` go xKvs yKvs
 
 -- | Insert a value for a range of keys.
 --
