@@ -15,7 +15,7 @@ import Data.Hex (Hex (unhex))
 import Data.List (elemIndex, foldl')
 import Data.List.Extra (dropEnd)
 import Data.Maybe (fromJust)
-import Debug.Trace
+import Debug.Trace (trace)
 import Linear.V2 (V2 (..))
 import RangeMap
   ( Range (..),
@@ -32,6 +32,7 @@ import RangeMap
 main :: IO ()
 main = run parse part1 part2
 
+-- | The directions of movement
 data Dir = R | L | D | U deriving (Read, Show)
 
 -- | The input problem.
@@ -41,6 +42,7 @@ type Problem = [(Dir, Int, String)]
 -- | One digging instruction to dig in a given direction
 type DigInst = (Dir, Int)
 
+-- | Parse the input file
 parse :: String -> Problem
 parse =
   map parseLine . lines
@@ -50,9 +52,11 @@ parse =
       where
         [a, b, c] = words . replace '(' ' ' . replace ')' ' ' . replace '#' ' ' $ s
 
+-- | Run part 1
 part1 :: Problem -> Int
 part1 = solve . compilePart1
 
+-- | Run part 2
 part2 :: Problem -> Int
 part2 = solve . compilePart2
 
@@ -91,6 +95,7 @@ solve :: [(Dir, Int)] -> Int
 solve = score . dig
 
 -- | Count the number of cells in the lagoon.
+-- The RangeGrid divides the area up into vertical columns, each of which has a width.
 score :: RangeGrid Int Char -> Int
 score =
   sum . map scoreCol . rmToList
@@ -128,7 +133,7 @@ scoreRanges =
         s = (if counts then rangeSize r else 0) : s0
         -- does this range add to the score?
         counts = c /= ' ' || inside0
-        -- new corner state
+        -- new corner state, given the previous corner state and the next char
         (corner, inside) = case (corner0, c) of
           (' ', ' ') -> (' ', inside0)
           (' ', 'L') -> ('L', inside0)
@@ -211,12 +216,13 @@ turnChar D R = 'L'
 turnChar L U = 'R'
 turnChar L D = 'L'
 
-traceGrid :: RangeGrid Int Char -> RangeGrid Int Char
-traceGrid g = trace (rgFormat g id ++ "\n") g
-
 -- | Turn a direction into a unit vector in that direction.
 delta :: Dir -> Point
 delta R = V2 1 0
 delta L = V2 (-1) 0
 delta U = V2 0 (-1)
 delta D = V2 0 1
+
+-- | Show the contents of the grid
+traceGrid :: RangeGrid Int Char -> RangeGrid Int Char
+traceGrid g = trace (rgFormat g id ++ "\n") g

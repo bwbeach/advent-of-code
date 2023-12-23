@@ -1,3 +1,18 @@
+-- |
+-- Module      : RangeMap
+-- Description : Maps where ranges of keys map to the same value.
+--
+-- A RangeMap is a mapping from Ranges of keys to values, for use in mappings
+-- where there are sequences of keys that map to the same value.
+--
+-- Functions that manipulate RangeMaps have names that start with "rm".
+--
+-- A RangeGrid is nested RangeMaps to provide the same funtionality to a
+-- two-dimensional grid where a rectangle of keys map to the same value.
+--
+-- Update, insertion, and lookup are all O(n).  I think that with a tree
+-- representation, they could be close to O(log n).  I think that could be
+-- done on top of Data.Map, if it offered "find the nearest entry".
 module RangeMap
   ( Range (..),
     RangeGrid,
@@ -17,7 +32,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Set as S
 import qualified Data.Type.Bool as RangeMaps
 
--- | A range of numbers
+-- | A range of keys
 data Range a
   = Range a a
   deriving (Eq, Ord, Show)
@@ -212,7 +227,7 @@ rgInsert :: (Integral k, Eq v) => Range k -> Range k -> v -> RangeGrid k v -> Ra
 rgInsert xRange yRange v = rgUpdate xRange yRange (const (Just v))
 
 -- | Formats a RangeGrid for printing.
--- The result is not to scale -- every range of values possible is reduced to one cell wide.
+-- The result is not to scale -- every range of values possible is reduced to one or two cells wide.
 --
 -- >>> rgFormat (rgInsert (Range 15 25) (Range 5 8) 'B' rgEmpty) id
 -- "BB\nBB\n"
