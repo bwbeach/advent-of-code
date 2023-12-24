@@ -22,6 +22,7 @@ module RangeMap
     rgFormat,
     rgInsert,
     rmEmpty,
+    rmMerge,
     rmRangeEnds,
     rmSingleton,
     rmToList,
