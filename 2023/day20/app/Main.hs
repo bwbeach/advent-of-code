@@ -4,9 +4,10 @@ module Main where
 
 import Advent (run)
 import Data.Function ((&))
-import Data.List (foldl')
+import Data.List (findIndex, foldl')
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromJust)
 import qualified Data.Set as S
 import Data.Tuple (swap)
 import Data.Tuple.Extra (second)
@@ -27,10 +28,31 @@ part1 modules =
     -- Extract the counts
     & machineCounts
     -- Multiple the low count and high count
-    & uncurry (*)
+    & (\mc -> mcLow mc * mcHigh mc)
 
 part2 :: Modules -> Int
-part2 = length
+part2 modules =
+  if hasRx
+    then rxIndex
+    else -1
+  where
+    rxIndex =
+      modules
+        -- Create the initial state
+        & initialState
+        -- Push the button as many times as needed
+        & iterate (pushButton modules)
+        -- Extract the counts
+        & map machineCounts
+        -- How many times until rx count is non-zero?
+        & findIndex (\mc -> mcLowToRx mc > 0)
+        -- Extract answer
+        & fromJust
+    -- Does any module have an ouput names "rx"?
+    hasRx =
+      any (`moduleHasOutput` "rx") (M.elems modules)
+    -- Does the module have an ouptu with the given name?
+    moduleHasOutput m n = n `elem` snd m
 
 -- | Modules are named with Strings
 -- (This might be too much type-def-ing, but it does make the later definitions clear.
@@ -75,17 +97,38 @@ data ModuleState
     NoOpState
   deriving (Eq, Ord, Show)
 
--- | The state of the whole machine consists of a state for each module
-data MachineState = MachineState
-  { machineModules :: M.Map ModuleName ModuleState,
-    machineCounts :: (Int, Int)
+-- | Counts of activity in the machine
+data MachineCounts = MachineCounts
+  { mcLow :: Int, -- number of Low pulses delivered
+    mcHigh :: Int, -- number of High pulses delivered
+    mcLowToRx :: Int -- number of Low pulses delivered to "rx"
   }
   deriving (Show)
 
+-- | The state of the whole machine consists of a state for each module
+data MachineState = MachineState
+  { machineModules :: M.Map ModuleName ModuleState,
+    machineCounts :: MachineCounts
+  }
+  deriving (Show)
+
+-- | Initial state of the counters
+initialCounts :: MachineCounts
+initialCounts =
+  MachineCounts
+    { mcLow = 0,
+      mcHigh = 0,
+      mcLowToRx = 0
+    }
+
 -- | Update the low/high counts kept in the machine state
-updateCounts :: PulseType -> Int -> (Int, Int) -> (Int, Int)
-updateCounts Low n (a, b) = (a + n, b)
-updateCounts High n (a, b) = (a, b + n)
+updateCounts :: PulseType -> String -> MachineCounts -> MachineCounts
+updateCounts p n MachineCounts {mcLow = low, mcHigh = high, mcLowToRx = lowRx} =
+  MachineCounts
+    { mcLow = if p == Low then low + 1 else low,
+      mcHigh = if p == High then high + 1 else high,
+      mcLowToRx = if p == Low && n == "rx" then lowRx + 1 else lowRx
+    }
 
 -- | Convert an input file into a set of module definitions
 parse :: String -> Modules
@@ -120,7 +163,7 @@ type PulseEvent =
 -- | What's the initial state of the machine?
 initialState :: Modules -> MachineState
 initialState modules =
-  MachineState {machineModules = moduleStates, machineCounts = (0, 0)}
+  MachineState {machineModules = moduleStates, machineCounts = initialCounts}
   where
     moduleStates = M.fromList . map modState . M.toList $ modules
     modState (name, (modType, _)) =
@@ -155,8 +198,8 @@ pushButton modules start =
           Just p -> map (toName,,p) outgoing
         -- update this module's state in the machine state
         mm' = M.insert toName ms' mm
-        -- update the pulse counts  TODO: use functor?
-        mc' = updateCounts level 1 mc
+        -- update the pulse counts
+        mc' = updateCounts level toName mc
 
 -- mc' = case maybePulse of
 --   Nothing -> mc
