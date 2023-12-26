@@ -7,13 +7,13 @@ import Data.Bits (Bits (xor))
 import qualified Data.Foldable as F
 import Data.Function ((&))
 import qualified Data.Graph.Wrapper as G
-import Data.List (findIndex, foldl')
+import Data.List (findIndex, foldl', sort)
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust, mapMaybe)
+import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import qualified Data.Set as S
 import Data.Tuple (swap)
-import Data.Tuple.Extra (second)
+import Data.Tuple.Extra (first, second)
 import Debug.Trace
 
 main :: IO ()
@@ -62,7 +62,7 @@ part2TooSlow modules =
     & fromJust
 
 part2Faster :: Modules -> Int
-part2Faster = M.size . mgModules . traceShowId . (M.! "bm") . groupModules
+part2Faster modules = 0
 
 -- | A group of modules with at most one input and at most one output.
 data ModuleGroup = ModuleGroup
@@ -391,3 +391,57 @@ mtsToList =
 -- fromList [('A',fromList [1]),('B',fromList [1,2])]
 mtsTranspose :: (Ord a, Ord b, Show a, Show b) => MapToSet a b -> MapToSet b a
 mtsTranspose = mtsFromList . map swap . mtsToList
+
+-- | A repeating cycle of events.
+-- At most one event happens at a given time.
+data Cycle e = Cycle
+  { cycInitialLen :: Int, -- Number of events before things start repeating
+    cycInitialSeq :: [(Int, e)], -- List of (time, event) before repeat start
+    cycRepeatLen :: Int, -- Number of events in the repeating cycle
+    cycRepeatSeq :: [(Int, e)] -- List of events that repeat
+  }
+  deriving (Show)
+
+-- | Find the repeating cycle in an infinite list of events.
+-- Each input is a timestamp, the event generated at that time, and the state of
+-- the machine generating the events.  When a given state is repeated is when
+-- we know that the cycle will repeat.
+--
+-- To find the cycle, we keep a map of the states that have been seen, and the
+-- time they happened.
+--
+-- >>> findCycle [("s1", (1, 'A')), ("s2", (3, 'B')), ("s3", (5, 'C')), ("s2", (9, 'B'))]
+-- Cycle {cycInitialLen = 3, cycInitialSeq = [(1,'A')], cycRepeatLen = 6, cycRepeatSeq = [(3,'B'),(5,'C')]}
+findCycle :: (Ord e, Ord s) => [(s, (Int, e))] -> Cycle e
+findCycle =
+  go M.empty
+  where
+    go history ((s, (t, e)) : events) =
+      case M.lookup s history of
+        Nothing -> go (M.insert s (t, e) history) events
+        Just (t', _) ->
+          Cycle
+            { cycInitialLen = t',
+              cycInitialSeq = historyBefore t',
+              cycRepeatLen = t - t',
+              cycRepeatSeq = historyAfter t'
+            }
+      where
+        historyInOrder = sort (M.elems history)
+        historyBefore x = takeWhile (\(y, _) -> y < x) historyInOrder
+        historyAfter x = dropWhile (\(y, _) -> y < x) historyInOrder
+
+-- | The infinite sequence of events that a Cycle produces
+--
+-- >>> take 8 $ runCycle Cycle {cycInitialLen = 3, cycInitialSeq = [(1,'A')], cycRepeatLen = 6, cycRepeatSeq = [(3,'B'),(5,'C')]}
+-- [(1,'A'),(3,'B'),(5,'C'),(9,'B'),(11,'C'),(15,'B'),(17,'C'),(21,'B')]
+runCycle :: Cycle e -> [(Int, e)]
+runCycle cycle =
+  initial ++ concat (iterate (addTime repLen) rep)
+  where
+    Cycle
+      { cycInitialSeq = initial,
+        cycRepeatSeq = rep,
+        cycRepeatLen = repLen
+      } = cycle
+    addTime delta = map (first (+ delta))
