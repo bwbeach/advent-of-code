@@ -3,11 +3,14 @@
 module Main where
 
 import Advent (run)
+import Data.Bits (Bits (xor))
+import qualified Data.Foldable as F
 import Data.Function ((&))
+import qualified Data.Graph.Wrapper as G
 import Data.List (findIndex, foldl')
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, mapMaybe)
 import qualified Data.Set as S
 import Data.Tuple (swap)
 import Data.Tuple.Extra (second)
@@ -30,29 +33,128 @@ part1 modules =
     -- Multiple the low count and high count
     & (\mc -> mcLow mc * mcHigh mc)
 
+-- | Run part2 only on machines that have an "rx" module.
 part2 :: Modules -> Int
 part2 modules =
   if hasRx
-    then rxIndex
+    then part2Faster modules
     else -1
   where
-    rxIndex =
-      modules
-        -- Create the initial state
-        & initialState
-        -- Push the button as many times as needed
-        & iterate (pushButton modules)
-        -- Extract the counts
-        & map machineCounts
-        -- How many times until rx count is non-zero?
-        & findIndex (\mc -> mcLowToRx mc > 0)
-        -- Extract answer
-        & fromJust
     -- Does any module have an ouput names "rx"?
     hasRx =
       any (`moduleHasOutput` "rx") (M.elems modules)
     -- Does the module have an ouptu with the given name?
     moduleHasOutput m n = n `elem` snd m
+
+-- | Solve part2 (I think) in a way that takes waaay to long to run.
+part2TooSlow :: Modules -> Int
+part2TooSlow modules =
+  modules
+    -- Create the initial state
+    & initialState
+    -- Push the button as many times as needed
+    & iterate (pushButton modules)
+    -- Extract the counts
+    & map machineCounts
+    -- How many times until rx count is non-zero?
+    & findIndex (\mc -> mcLowToRx mc > 0)
+    -- Extract answer
+    & fromJust
+
+part2Faster :: Modules -> Int
+part2Faster = M.size . mgModules . traceShowId . (M.! "bm") . groupModules
+
+-- | A group of modules with at most one input and at most one output.
+data ModuleGroup = ModuleGroup
+  { mgEdgeIn :: (ModuleName, ModuleName), -- The edge feeding into the group
+    mgEdgeOut :: (ModuleName, ModuleName), -- The edge leaving the group
+    mgModules :: M.Map ModuleName ModuleDef -- The modules in the group
+  }
+  deriving (Show)
+
+-- | The module that a group outputs to
+mgOutputTo :: ModuleGroup -> ModuleName
+mgOutputTo = snd . mgEdgeOut
+
+-- | Groups modules into strongly connected components.
+-- Includes only groups that have exactly one edge coming in, and one going out.
+-- In the given problem, this is true for every group except for ["broacaster"] and ["rx"].
+--
+-- Returns a map from the name of the module the group outputs to.
+groupModules :: Modules -> M.Map ModuleName ModuleGroup
+groupModules modules =
+  M.fromList . map (\g -> (mgOutputTo g, g)) . mapMaybe makeGroup $ sccs
+  where
+    -- Make a group of modules with the given names
+    makeGroup names =
+      mkGroup <$> modIn names <*> modOut names
+      where
+        mkGroup ei eo =
+          ModuleGroup
+            { mgEdgeIn = ei,
+              mgEdgeOut = eo,
+              mgModules = M.fromList . map (\n -> (n, modules M.! n)) $ names
+            }
+
+    -- The edge leading into a connected group
+    modOut = edgeOut graph
+
+    -- The edge leading into a connected group
+    modIn = fmap swap . edgeOut inverseGraph
+
+    -- Strongly connected components.
+    -- A list of lists of module names.  Each of the inner lists is a connected component.
+    sccs = map F.toList . F.toList . G.stronglyConnectedComponents $ graph
+
+    -- A directed graph with edges from modules to the modules the send to.
+    graph = moduleGraph modules
+
+    -- A directed graph with edges from modules to the modules they receive input from
+    inverseGraph = G.transpose graph
+
+-- | The one edge leaving a group of modules, or Nothing if there isn't a unique edge.
+-- Result is a pair: (nodeInGroup, nodeOutsideGroup)
+edgeOut :: (Ord a) => G.Graph a a -> [a] -> Maybe (a, a)
+edgeOut graph group =
+  onlyOrNothing . filter (not . (`elem` group) . snd) $ pairs
+  where
+    -- All edges starting inside the group
+    pairs = concatMap (successorPairs graph) group
+
+-- | A graph of the names of all modules, with edges for the flow of pulses
+moduleGraph :: Modules -> G.Graph ModuleName ModuleName
+moduleGraph modules =
+  G.fromListSimple (modAndOutputs ++ leavesAndNoOutputs)
+  where
+    -- A list of pairs: (moduleName, [outputsOfModuleName])
+    modAndOutputs = map (\(name, (_, outs)) -> (name, outs)) . M.toList $ modules
+
+    -- A list of pairs: (leafName, [])
+    leavesAndNoOutputs = map (,[]) leaves
+
+    -- All of the module names that have definitions
+    nonLeaves = S.fromList . map fst $ modAndOutputs
+
+    -- All of the module names that are listed as outputs, but don't have definitions.
+    leaves = unique . concatMap (filter (not . (`S.member` nonLeaves)) . snd) $ modAndOutputs
+
+-- | Unique values in a list
+unique :: (Ord a) => [a] -> [a]
+unique = S.toList . S.fromList
+
+-- | Returns the single value in the list, or Nothing if there are none or two or more.
+onlyOrNothing :: [a] -> Maybe a
+onlyOrNothing [x] = Just x
+onlyOrNothing _ = Nothing
+
+-- | Move a Maybe inside a pair.  TODO: find a library function that does this
+unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
+unzipMaybe Nothing = (Nothing, Nothing)
+unzipMaybe (Just (a, b)) = (Just a, Just b)
+
+-- | Given a node n in a graph g, return a list of [(n, s)] for all successors s.
+successorPairs :: (Ord i) => G.Graph i v -> i -> [(i, i)]
+successorPairs g n = map (n,) (G.successors g n)
 
 -- | Modules are named with Strings
 -- (This might be too much type-def-ing, but it does make the later definitions clear.
