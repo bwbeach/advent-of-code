@@ -327,15 +327,11 @@ runModule ms fromName pulseType =
         Off -> (FlipFlopState On, Just High)
         On -> (FlipFlopState Off, Just Low)
     ConjunctionState sources prev ->
-      (ConjunctionState sources' (Just pulseType'), out)
+      (ConjunctionState sources' (Just pulseType'), Just pulseType')
       where
         sources' = M.insert fromName pulseType sources
         allHigh = all (== High) . M.elems $ sources'
         pulseType' = if allHigh then Low else High
-        out =
-          if prev == Just High && pulseType' == High
-            then Nothing
-            else Just pulseType'
 
 -- | Process and queue events until they are all done.
 -- Events are processed in the order generated.
@@ -470,7 +466,7 @@ type GroupState = (CycleGenerator TimedPulses, ModuleStates, Int)
 groupOutput :: ModuleGroups -> String -> Cycle TimedPulses
 groupOutput _ "broadcaster" = Cycle {cycInitial = [], cycRepeat = [(1, [Low])]}
 groupOutput groups groupName =
-  traceShowId $ findCycle (inputGen, modStates) (extractEvents seq)
+  findCycle (inputGen, modStates) (extractEvents seq)
   where
     -- Get info from the group definition
     ModuleGroup
