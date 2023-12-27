@@ -40,7 +40,7 @@ part1 modules =
     & map (\(_, ec, _) -> ec)
     -- Add them up
     & foldl' addCounts (EventCounts 0 0)
-    -- Multiple the low count and high count
+    -- Multiply the low count and high count
     & (\(EventCounts a b) -> a * b)
   where
     pushHelper modules (s, _, _) = pushButton modules s
@@ -49,7 +49,7 @@ part1 modules =
 part2 :: Modules -> Int
 part2 modules =
   case rxSourceModule of
-    Nothing -> -1
+    Nothing -> -1 -- the two tests don't have an rx module, so part 2 doesn't make sense
     Just rsm -> product . traceShowId . map groupPeriod . traceShowId $ bigGroupNames
   where
     -- The unique module that outputs to rx, if there is one
@@ -64,11 +64,7 @@ part2 modules =
     isBigGroup = (4 <) . M.size . mgModules
     -- Cycle period of a group
     groupPeriod =
-      fst . head . cycRepeat . groupOutput groups
-
--- | Returns the stream of events (time, pulseType) output by a module
-moduleOutput :: Modules -> ModuleDef -> [(Int, PulseType)]
-moduleOutput _ _ = [(5, Low)]
+      sum . map fst . cycRepeat . groupOutput groups
 
 -- | A group of modules with at most one input and at most one output.
 data ModuleGroup = ModuleGroup
@@ -82,9 +78,6 @@ type ModuleGroups = M.Map ModuleName ModuleGroup
 
 mgOutputModule :: ModuleGroup -> ModuleName
 mgOutputModule = fst . mgEdgeOut
-
-mgOutputTo :: ModuleGroup -> ModuleName
-mgOutputTo = snd . mgEdgeOut
 
 -- | Groups modules into strongly connected components.
 -- Includes only groups that have exactly one edge coming in, and one going out.
@@ -157,11 +150,6 @@ unique = S.toList . S.fromList
 onlyOrNothing :: [a] -> Maybe a
 onlyOrNothing [x] = Just x
 onlyOrNothing _ = Nothing
-
--- | Move a Maybe inside a pair.  TODO: find a library function that does this
-unzipMaybe :: Maybe (a, b) -> (Maybe a, Maybe b)
-unzipMaybe Nothing = (Nothing, Nothing)
-unzipMaybe (Just (a, b)) = (Just a, Just b)
 
 -- | Given a node n in a graph g, return a list of [(n, s)] for all successors s.
 successorPairs :: (Ord i) => G.Graph i v -> i -> [(i, i)]
