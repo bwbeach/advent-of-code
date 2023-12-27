@@ -3,12 +3,11 @@
 module Main where
 
 import Advent (run)
-import Data.Bits (Bits (xor))
 import qualified Data.Foldable as F
 import Data.Function ((&))
 import qualified Data.Graph.Wrapper as G
 import Data.List (findIndex, foldl', sort)
-import Data.List.Split (splitOn)
+import Data.List.Split (chunk, splitOn)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromJust, fromMaybe, mapMaybe)
 import qualified Data.Set as S
@@ -36,15 +35,18 @@ part1 modules =
 -- | Run part2 only on machines that have an "rx" module.
 part2 :: Modules -> Int
 part2 modules =
-  if hasRx
-    then part2Faster modules
-    else -1
+  case rxSourceModule of
+    Nothing -> -1
+    Just rsm -> fst . head . moduleOutput modules $ rsm
   where
-    -- Does any module have an ouput names "rx"?
-    hasRx =
-      any (`moduleHasOutput` "rx") (M.elems modules)
-    -- Does the module have an ouptu with the given name?
+    -- The unique module that outputs to rx, if there is one
+    rxSourceModule = onlyOrNothing . filter (`moduleHasOutput` "rx") . M.elems $ modules
+    -- Does the module have an output with the given name?
     moduleHasOutput m n = n `elem` snd m
+
+-- | Returns the stream of events (time, pulseType) output by a module
+moduleOutput :: Modules -> ModuleDef -> [(Int, PulseType)]
+moduleOutput _ _ = [(5, Low)]
 
 -- | Solve part2 (I think) in a way that takes waaay to long to run.
 part2TooSlow :: Modules -> Int
@@ -68,11 +70,13 @@ part2Faster modules = 0
 data ModuleGroup = ModuleGroup
   { mgEdgeIn :: (ModuleName, ModuleName), -- The edge feeding into the group
     mgEdgeOut :: (ModuleName, ModuleName), -- The edge leaving the group
-    mgModules :: M.Map ModuleName ModuleDef -- The modules in the group
+    mgModules :: Modules -- The modules in the group
   }
   deriving (Show)
 
--- | The module that a group outputs to
+mgOutputModule :: ModuleGroup -> ModuleName
+mgOutputModule = fst . mgEdgeOut
+
 mgOutputTo :: ModuleGroup -> ModuleName
 mgOutputTo = snd . mgEdgeOut
 
@@ -80,10 +84,11 @@ mgOutputTo = snd . mgEdgeOut
 -- Includes only groups that have exactly one edge coming in, and one going out.
 -- In the given problem, this is true for every group except for ["broacaster"] and ["rx"].
 --
--- Returns a map from the name of the module the group outputs to.
+-- Returns a map from the name of the group's output module to the group.
+-- This lets the consumers of the group's output find the group.
 groupModules :: Modules -> M.Map ModuleName ModuleGroup
 groupModules modules =
-  M.fromList . map (\g -> (mgOutputTo g, g)) . mapMaybe makeGroup $ sccs
+  M.fromList . map (\g -> (mgOutputModule g, g)) . mapMaybe makeGroup $ sccs
   where
     -- Make a group of modules with the given names
     makeGroup names =
@@ -97,10 +102,10 @@ groupModules modules =
             }
 
     -- The edge leading into a connected group
-    modOut = edgeOut graph
+    modOut = onlyOrNothing . edgesOut graph
 
     -- The edge leading into a connected group
-    modIn = fmap swap . edgeOut inverseGraph
+    modIn = onlyOrNothing . map swap . edgesOut inverseGraph
 
     -- Strongly connected components.
     -- A list of lists of module names.  Each of the inner lists is a connected component.
@@ -112,11 +117,11 @@ groupModules modules =
     -- A directed graph with edges from modules to the modules they receive input from
     inverseGraph = G.transpose graph
 
--- | The one edge leaving a group of modules, or Nothing if there isn't a unique edge.
--- Result is a pair: (nodeInGroup, nodeOutsideGroup)
-edgeOut :: (Ord a) => G.Graph a a -> [a] -> Maybe (a, a)
-edgeOut graph group =
-  onlyOrNothing . filter (not . (`elem` group) . snd) $ pairs
+-- | All edges leaving a module group.
+-- Result is a list: [(nodeInGroup, nodeOutsideGroup)]
+edgesOut :: (Ord a) => G.Graph a a -> [a] -> [(a, a)]
+edgesOut graph group =
+  filter (not . (`elem` group) . snd) pairs
   where
     -- All edges starting inside the group
     pairs = concatMap (successorPairs graph) group
@@ -167,6 +172,7 @@ data ModuleType
   | FlipFlop
   | Conjunction
   | NoOp
+  | Collector
   deriving (Eq, Ord, Show)
 
 -- | The definition of a module consists of its type and output connections
@@ -197,7 +203,11 @@ data ModuleState
     ConjunctionState (M.Map String PulseType)
   | -- NoOps have no state
     NoOpState
+  | -- Collectors hold a pulse type
+    CollectorState (Maybe PulseType)
   deriving (Eq, Ord, Show)
+
+type ModuleStates = M.Map ModuleName ModuleState
 
 -- | Counts of activity in the machine
 data MachineCounts = MachineCounts
@@ -209,7 +219,7 @@ data MachineCounts = MachineCounts
 
 -- | The state of the whole machine consists of a state for each module
 data MachineState = MachineState
-  { machineModules :: M.Map ModuleName ModuleState,
+  { machineModules :: ModuleStates,
     machineCounts :: MachineCounts
   }
   deriving (Show)
@@ -288,7 +298,7 @@ pushButton modules start =
       where
         MachineState {machineModules = mm, machineCounts = mc} = s
         (fromName, toName, level) = e
-        -- the definition of the module to run has the list ouf outgoing connections
+        -- the definition of the module to run has the list of outgoing connections
         (_, outgoing) = M.findWithDefault (NoOp, []) toName modules
         -- current state of that module
         ms = M.findWithDefault NoOpState toName mm
@@ -392,56 +402,117 @@ mtsToList =
 mtsTranspose :: (Ord a, Ord b, Show a, Show b) => MapToSet a b -> MapToSet b a
 mtsTranspose = mtsFromList . map swap . mtsToList
 
--- | A repeating cycle of events.
--- At most one event happens at a given time.
+-- | An infinite sequence of events, which repeats in a cycle after some point.
 data Cycle e = Cycle
-  { cycInitialLen :: Int, -- Number of events before things start repeating
-    cycInitialSeq :: [(Int, e)], -- List of (time, event) before repeat start
-    cycRepeatLen :: Int, -- Number of events in the repeating cycle
-    cycRepeatSeq :: [(Int, e)] -- List of events that repeat
+  { cycInitial :: [e], -- events that happen before the repeating starts
+    cycRepeat :: [e] -- sequence that then repeats forever
   }
   deriving (Show)
 
--- | Find the repeating cycle in an infinite list of events.
--- Each input is a timestamp, the event generated at that time, and the state of
--- the machine generating the events.  When a given state is repeated is when
--- we know that the cycle will repeat.
+-- | Find a Cycle in a sequence events generated by something with state.
+-- Assumes that a given state will always result in the same sequence of events.
 --
--- To find the cycle, we keep a map of the states that have been seen, and the
--- time they happened.
---
--- >>> findCycle [("s1", (1, 'A')), ("s2", (3, 'B')), ("s3", (5, 'C')), ("s2", (9, 'B'))]
--- Cycle {cycInitialLen = 3, cycInitialSeq = [(1,'A')], cycRepeatLen = 6, cycRepeatSeq = [(3,'B'),(5,'C')]}
-findCycle :: (Ord e, Ord s) => [(s, (Int, e))] -> Cycle e
-findCycle =
-  go M.empty
+-- >>> findCycle 0 [('A', 1), ('B', 2), ('C', 3), ('D', 2)]
+-- Cycle {cyc2Initial = "AB", cyc2Repeat = "CD"}
+findCycle ::
+  (Ord s) =>
+  s -> -- initial state
+  [(e, s)] -> -- an event, and the state that follows it
+  Cycle e -- the cycle
+findCycle s0 =
+  go (M.insert s0 0 M.empty) 1 []
   where
-    go history ((s, (t, e)) : events) =
+    go history i revList ((e, s) : ess) =
       case M.lookup s history of
-        Nothing -> go (M.insert s (t, e) history) events
-        Just (t', _) ->
+        Just j ->
           Cycle
-            { cycInitialLen = t',
-              cycInitialSeq = historyBefore t',
-              cycRepeatLen = t - t',
-              cycRepeatSeq = historyAfter t'
+            { cycInitial = take j list,
+              cycRepeat = drop j list
             }
-      where
-        historyInOrder = sort (M.elems history)
-        historyBefore x = takeWhile (\(y, _) -> y < x) historyInOrder
-        historyAfter x = dropWhile (\(y, _) -> y < x) historyInOrder
+          where
+            list = reverse (e : revList)
+        Nothing -> go (M.insert s i history) (i + 1) (e : revList) ess
 
--- | The infinite sequence of events that a Cycle produces
+-- | The infinite sequence of events defined by a Cycle
 --
--- >>> take 8 $ runCycle Cycle {cycInitialLen = 3, cycInitialSeq = [(1,'A')], cycRepeatLen = 6, cycRepeatSeq = [(3,'B'),(5,'C')]}
--- [(1,'A'),(3,'B'),(5,'C'),(9,'B'),(11,'C'),(15,'B'),(17,'C'),(21,'B')]
-runCycle :: Cycle e -> [(Int, e)]
-runCycle cycle =
-  initial ++ concat (iterate (addTime repLen) rep)
+-- >>> take 10 . runCycle $ findCycle 0 [('A', 1), ('B', 2), ('C', 3), ('D', 2)]
+-- "ABCDCDCDCD"
+runCycle :: Cycle e -> [e]
+runCycle c =
+  cycInitial c ++ cycle (cycRepeat c)
+
+-- | Generates the events in a cycle, and implements Ord for state comparisons.
+data CycleGenerator e
+  = CycleGenerator [e] [e]
+  deriving (Eq, Ord, Show)
+
+-- | Make a CycleGenerator from a Cycle
+cycleGen :: Cycle e -> CycleGenerator e
+cycleGen c = CycleGenerator (cycInitial c) (cycRepeat c)
+
+-- | Generate the next event from a CycleGenerator, and the updated generator.
+cycleGenNext :: CycleGenerator e -> (e, CycleGenerator e)
+cycleGenNext (CycleGenerator [] rs) = cycleGenNext (CycleGenerator rs rs)
+cycleGenNext (CycleGenerator (e : es) rs) = (e, CycleGenerator es rs)
+
+-- | Compute the Cycle that's output by the given ModuleGroup
+evalModuleGroup :: M.Map ModuleName ModuleGroup -> ModuleName -> Cycle (Int, PulseType)
+evalModuleGroup defs name = findCycle 1 [((1, Low), 1)] -- TODO
+
+-- modGroup (cycleGen, modStates)
+
+type TimedPulse = (Int, PulseType)
+
+type GroupState = (CycleGenerator TimedPulse, ModuleStates, Int)
+
+-- | Advance a module group into its next state
+advanceGroup :: ModuleGroup -> GroupState -> (GroupState, Maybe TimedPulse)
+advanceGroup mg (cg, moduleStates, tsp) =
+  ((cg', moduleStates', tsp + dt), Nothing) -- TODO time and pulse
   where
-    Cycle
-      { cycInitialSeq = initial,
-        cycRepeatSeq = rep,
-        cycRepeatLen = repLen
-      } = cycle
-    addTime delta = map (first (+ delta))
+    -- The definitions of the modules in the group
+    modules = mgModules mg
+    -- Where the output of the group goes
+    (_, out) = mgEdgeOut mg
+    -- The next pulse to send.  `dt` is the delta time, `pt` is the pulse type
+    ((dt, pt), cg') = cycleGenNext cg
+    -- The pulse goes into the module group on the one inbound edge
+    (firstEventFrom, firstEventTo) = mgEdgeIn mg
+    -- The event to send in
+    firstEvent = (firstEventFrom, firstEventTo, pt)
+    -- Process the event and things cascading from it, producing the new module states
+    moduleStates' = processEvents oneEvent moduleStates firstEvent
+    -- How to handle one event
+    oneEvent s (fromName, toName, level) =
+      (s', newEvents)
+      where
+        -- The definition of the module to run has the list of outgoing connections
+        (_, outgoing) = M.findWithDefault (Collector, []) toName modules
+        -- the current state of that module
+        ms = M.findWithDefault (CollectorState Nothing) toName s
+        -- run the module
+        (ms', maybePulse) = runModule ms fromName level
+        -- create the outgoing events
+        newEvents = case maybePulse of
+          Nothing -> []
+          Just p -> map (toName,,p) outgoing
+        -- store the new module state
+        s' = M.insert toName ms' moduleStates
+
+-- | Process one event in a set of modules, producing a list of subsequent events.
+oneEvent :: Modules -> ModuleStates -> PulseEvent -> (ModuleStates, [PulseEvent])
+oneEvent modules moduleStates (fromName, toName, level) =
+  (moduleStates', newEvents)
+  where
+    -- The definition of the module to run has the list of outgoing connections
+    (_, outgoing) = modules M.! toName
+    -- The current state of that module
+    ms = moduleStates M.! toName
+    -- Run the module
+    (ms', maybePulse) = runModule ms fromName level
+    -- Create the outgoing events
+    newEvents = case maybePulse of
+      Nothing -> []
+      Just p -> map (toName,,p) outgoing
+    -- store the new module state
+    moduleStates' = M.insert toName ms' moduleStates
