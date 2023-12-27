@@ -23,14 +23,21 @@ part1 modules =
   modules
     -- Create the initial state
     & initialState
-    -- Push the button as many times as needed
-    & iterate (pushButton modules)
-    -- Take the result of the 1000-th push
-    & (!! 1000)
+    -- Add a dummy count
+    & (,EventCounts 0 0)
+    -- Push the button as many times as needed, producing a list of (machineState, eventCount)
+    & iterate (pushHelper modules)
+    -- Take the results of the first 1000 pushes, without the first dummy counts
+    & take 1000 . drop 1
     -- Extract the counts
-    & machineCounts
+    & map snd
+    -- Add them up
+    & foldl' addCounts (EventCounts 0 0)
     -- Multiple the low count and high count
-    & (\mc -> mcLow mc * mcHigh mc)
+    & (\(EventCounts a b) -> a * b)
+  where
+    pushHelper :: Modules -> (MachineState, EventCounts) -> (MachineState, EventCounts)
+    pushHelper modules (s, ec) = pushButton modules s
 
 -- | Run part2 only on machines that have an "rx" module.
 part2 :: Modules -> Int
@@ -50,18 +57,19 @@ moduleOutput _ _ = [(5, Low)]
 
 -- | Solve part2 (I think) in a way that takes waaay to long to run.
 part2TooSlow :: Modules -> Int
-part2TooSlow modules =
-  modules
-    -- Create the initial state
-    & initialState
-    -- Push the button as many times as needed
-    & iterate (pushButton modules)
-    -- Extract the counts
-    & map machineCounts
-    -- How many times until rx count is non-zero?
-    & findIndex (\mc -> mcLowToRx mc > 0)
-    -- Extract answer
-    & fromJust
+part2TooSlow modules = 0
+
+-- modules
+--   -- Create the initial state
+--   & initialState
+--   -- Push the button as many times as needed
+--   & iterate (pushButton modules)
+--   -- Extract the counts
+--   & map machineCounts
+--   -- How many times until rx count is non-zero?
+--   & findIndex (\mc -> mcLowToRx mc > 0)
+--   -- Extract answer
+--   & fromJust
 
 part2Faster :: Modules -> Int
 part2Faster modules = 0
@@ -207,6 +215,7 @@ data ModuleState
     CollectorState (Maybe PulseType)
   deriving (Eq, Ord, Show)
 
+-- | The states of all of the modules in a machine
 type ModuleStates = M.Map ModuleName ModuleState
 
 -- | Counts of activity in the machine
@@ -272,6 +281,18 @@ type PulseEvent =
     PulseType -- low or high pulse?
   )
 
+-- | Count of events delivered
+data EventCounts
+  = EventCounts Int Int
+  deriving (Show)
+
+addCounts :: EventCounts -> EventCounts -> EventCounts
+addCounts (EventCounts a b) (EventCounts c d) = EventCounts (a + c) (b + d)
+
+bumpCounts :: EventCounts -> PulseType -> EventCounts
+bumpCounts (EventCounts a b) Low = EventCounts (a + 1) b
+bumpCounts (EventCounts a b) High = EventCounts a (b + 1)
+
 -- | What's the initial state of the machine?
 initialState :: Modules -> MachineState
 initialState modules =
@@ -289,12 +310,13 @@ initialState modules =
 
 -- | Push the button.  Return the state after all events have been processed.
 -- Events are (fromModuleName, toModuleName, pulseLevel)
-pushButton :: Modules -> MachineState -> MachineState
+-- State carried across events: (MachineState, EventCounts)
+pushButton :: Modules -> MachineState -> (MachineState, EventCounts)
 pushButton modules start =
-  processEvents oneEvent start ("button", "broadcaster", Low)
+  processEvents oneEvent (start, EventCounts 0 0) ("button", "broadcaster", Low)
   where
-    oneEvent s e =
-      (MachineState {machineModules = mm', machineCounts = mc'}, newEvents)
+    oneEvent (s, ec) e =
+      ((MachineState {machineModules = mm', machineCounts = mc'}, ec'), newEvents)
       where
         MachineState {machineModules = mm, machineCounts = mc} = s
         (fromName, toName, level) = e
@@ -312,6 +334,7 @@ pushButton modules start =
         mm' = M.insert toName ms' mm
         -- update the pulse counts
         mc' = updateCounts level toName mc
+        ec' = bumpCounts ec level
 
 -- mc' = case maybePulse of
 --   Nothing -> mc
