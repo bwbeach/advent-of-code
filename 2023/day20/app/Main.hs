@@ -24,7 +24,7 @@ part1 modules =
     -- Create the initial state
     & initialState
     -- Add a dummy count
-    & (,EventCounts 0 0,0)
+    & (,EventCounts 0 0,EventCounts 0 0)
     -- Push the button as many times as needed, producing a list of (machineState, eventCount)
     & iterate (pushHelper modules)
     -- Take the results of the first 1000 pushes, without the first dummy counts
@@ -36,7 +36,6 @@ part1 modules =
     -- Multiple the low count and high count
     & (\(EventCounts a b) -> a * b)
   where
-    pushHelper :: Modules -> (ModuleStates, EventCounts, Int) -> (ModuleStates, EventCounts, Int)
     pushHelper modules (s, _, _) = pushButton modules s
 
 -- | Run part2 only on machines that have an "rx" module.
@@ -273,15 +272,15 @@ initialState modules =
 
 -- | Push the button.  Return the state after all events have been processed.
 -- Events are (fromModuleName, toModuleName, pulseLevel)
--- State carried across events: (ModuleStates, EventCounts, externalEventCount)
-pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts, Int)
+-- State carried across events: (ModuleStates, allEventCounts, eventCountsToUndefined)
+pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts, EventCounts)
 pushButton modules start =
-  processEvents oneEvent (start, EventCounts 0 0, 0) ("button", "broadcaster", Low)
+  processEvents oneEvent (start, EventCounts 0 0, EventCounts 0 0) ("button", "broadcaster", Low)
   where
     oneEvent (s, ec, ext) e@(_, toName, level) =
       if M.member toName modules
         then oneEventToModule (s, ec, ext) e
-        else ((s, bumpCounts ec level, ext + 1), [])
+        else ((s, bumpCounts ec level, bumpCounts ext level), [])
 
     oneEventToModule (s, ec, ext) (fromName, toName, level) =
       ((s', ec', ext), newEvents)
@@ -453,53 +452,35 @@ type TimedPulse = (Int, PulseType)
 type GroupState = (CycleGenerator TimedPulse, ModuleStates, Int)
 
 -- | Advance a module group into its next state
-advanceGroup :: ModuleGroup -> GroupState -> (GroupState, Maybe TimedPulse)
-advanceGroup mg (cg, moduleStates, tsp) =
-  ((cg', moduleStates', tsp + dt), Nothing) -- TODO time and pulse
-  where
-    -- The definitions of the modules in the group
-    modules = mgModules mg
-    -- Where the output of the group goes
-    (_, out) = mgEdgeOut mg
-    -- The next pulse to send.  `dt` is the delta time, `pt` is the pulse type
-    ((dt, pt), cg') = cycleGenNext cg
-    -- The pulse goes into the module group on the one inbound edge
-    (firstEventFrom, firstEventTo) = mgEdgeIn mg
-    -- The event to send in
-    firstEvent = (firstEventFrom, firstEventTo, pt)
-    -- Process the event and things cascading from it, producing the new module states
-    moduleStates' = processEvents oneEvent moduleStates firstEvent
-    -- How to handle one event
-    oneEvent s (fromName, toName, level) =
-      (s', newEvents)
-      where
-        -- The definition of the module to run has the list of outgoing connections
-        (_, outgoing) = M.findWithDefault (Collector, []) toName modules
-        -- the current state of that module
-        ms = M.findWithDefault (CollectorState Nothing) toName s
-        -- run the module
-        (ms', maybePulse) = runModule ms fromName level
-        -- create the outgoing events
-        newEvents = case maybePulse of
-          Nothing -> []
-          Just p -> map (toName,,p) outgoing
-        -- store the new module state
-        s' = M.insert toName ms' moduleStates
-
--- | Process one event in a set of modules, producing a list of subsequent events.
--- oneEvent :: Modules -> ModuleStates -> PulseEvent -> (ModuleStates, [PulseEvent])
--- oneEvent modules moduleStates (fromName, toName, level) =
---   (moduleStates', newEvents)
+-- advanceGroup :: ModuleGroup -> GroupState -> (GroupState, Maybe TimedPulse)
+-- advanceGroup mg (cg, moduleStates, tsp) =
+--   ((cg', moduleStates', tsp + dt), Nothing) -- TODO time and pulse
 --   where
---     -- The definition of the module to run has the list of outgoing connections
---     (_, outgoing) = modules M.! toName
---     -- The current state of that module
---     ms = moduleStates M.! toName
---     -- Run the module
---     (ms', maybePulse) = runModule ms fromName level
---     -- Create the outgoing events
---     newEvents = case maybePulse of
---       Nothing -> []
---       Just p -> map (toName,,p) outgoing
---     -- store the new module state
---     moduleStates' = M.insert toName ms' moduleStates
+--     -- The definitions of the modules in the group
+--     modules = mgModules mg
+--     -- Where the output of the group goes
+--     (_, out) = mgEdgeOut mg
+--     -- The next pulse to send.  `dt` is the delta time, `pt` is the pulse type
+--     ((dt, pt), cg') = cycleGenNext cg
+--     -- The pulse goes into the module group on the one inbound edge
+--     (firstEventFrom, firstEventTo) = mgEdgeIn mg
+--     -- The event to send in
+--     firstEvent = (firstEventFrom, firstEventTo, pt)
+--     -- Process the event and things cascading from it, producing the new module states
+--     moduleStates' = processEvents oneEvent moduleStates firstEvent
+--     -- How to handle one event
+--     oneEvent s (fromName, toName, level) =
+--       (s', newEvents)
+--       where
+--         -- The definition of the module to run has the list of outgoing connections
+--         (_, outgoing) = M.findWithDefault (Collector, []) toName modules
+--         -- the current state of that module
+--         ms = M.findWithDefault (CollectorState Nothing) toName s
+--         -- run the module
+--         (ms', maybePulse) = runModule ms fromName level
+--         -- create the outgoing events
+--         newEvents = case maybePulse of
+--           Nothing -> []
+--           Just p -> map (toName,,p) outgoing
+--         -- store the new module state
+--         s' = M.insert toName ms' moduleStates
