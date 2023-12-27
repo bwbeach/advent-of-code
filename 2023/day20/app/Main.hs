@@ -24,20 +24,20 @@ part1 modules =
     -- Create the initial state
     & initialState
     -- Add a dummy count
-    & (,EventCounts 0 0)
+    & (,EventCounts 0 0,0)
     -- Push the button as many times as needed, producing a list of (machineState, eventCount)
     & iterate (pushHelper modules)
     -- Take the results of the first 1000 pushes, without the first dummy counts
     & take 1000 . drop 1
     -- Extract the counts
-    & map snd
+    & map (\(_, ec, _) -> ec)
     -- Add them up
     & foldl' addCounts (EventCounts 0 0)
     -- Multiple the low count and high count
     & (\(EventCounts a b) -> a * b)
   where
-    pushHelper :: Modules -> (ModuleStates, EventCounts) -> (ModuleStates, EventCounts)
-    pushHelper modules (s, ec) = pushButton modules s
+    pushHelper :: Modules -> (ModuleStates, EventCounts, Int) -> (ModuleStates, EventCounts, Int)
+    pushHelper modules (s, _, _) = pushButton modules s
 
 -- | Run part2 only on machines that have an "rx" module.
 part2 :: Modules -> Int
@@ -179,7 +179,6 @@ data ModuleType
   = Broadcast
   | FlipFlop
   | Conjunction
-  | NoOp
   | Collector
   deriving (Eq, Ord, Show)
 
@@ -209,8 +208,6 @@ data ModuleState
     FlipFlopState OnOrOff
   | -- Conjunctions remember the last pulse from each input
     ConjunctionState (M.Map String PulseType)
-  | -- NoOps have no state
-    NoOpState
   | -- Collectors hold a pulse type
     CollectorState (Maybe PulseType)
   deriving (Eq, Ord, Show)
@@ -271,25 +268,28 @@ initialState modules =
         Broadcast -> (name, BroadcastState)
         FlipFlop -> (name, FlipFlopState Off)
         Conjunction -> (name, ConjunctionState (conState name))
-        NoOp -> (name, NoOpState)
     conState = M.fromList . map (,Low) . S.toList . (modToInputs M.!)
     modToInputs = mtsTranspose . M.fromList . map (second (S.fromList . snd)) . M.toList $ modules
 
 -- | Push the button.  Return the state after all events have been processed.
 -- Events are (fromModuleName, toModuleName, pulseLevel)
--- State carried across events: (ModuleStates, EventCounts)
-pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts)
+-- State carried across events: (ModuleStates, EventCounts, externalEventCount)
+pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts, Int)
 pushButton modules start =
-  processEvents oneEvent (start, EventCounts 0 0) ("button", "broadcaster", Low)
+  processEvents oneEvent (start, EventCounts 0 0, 0) ("button", "broadcaster", Low)
   where
-    oneEvent (s, ec) e =
-      ((s', ec'), newEvents)
+    oneEvent (s, ec, ext) e@(_, toName, level) =
+      if M.member toName modules
+        then oneEventToModule (s, ec, ext) e
+        else ((s, bumpCounts ec level, ext + 1), [])
+
+    oneEventToModule (s, ec, ext) (fromName, toName, level) =
+      ((s', ec', ext), newEvents)
       where
-        (fromName, toName, level) = e
         -- the definition of the module to run has the list of outgoing connections
-        (_, outgoing) = M.findWithDefault (NoOp, []) toName modules
+        (_, outgoing) = modules M.! toName
         -- current state of that module
-        ms = M.findWithDefault NoOpState toName s
+        ms = s M.! toName
         -- let the module process the event
         (ms', maybePulse) = runModule ms fromName level
         -- create the outgoing events
@@ -330,7 +330,6 @@ runModule ms fromName pulseType =
         sources' = M.insert fromName pulseType sources
         allHigh = all (== High) . M.elems $ sources'
         pulseType' = if allHigh then Low else High
-    NoOpState -> (ms, Nothing)
 
 -- | Process and queue events until they are all done.
 -- Events are processed in the order generated.
@@ -488,19 +487,19 @@ advanceGroup mg (cg, moduleStates, tsp) =
         s' = M.insert toName ms' moduleStates
 
 -- | Process one event in a set of modules, producing a list of subsequent events.
-oneEvent :: Modules -> ModuleStates -> PulseEvent -> (ModuleStates, [PulseEvent])
-oneEvent modules moduleStates (fromName, toName, level) =
-  (moduleStates', newEvents)
-  where
-    -- The definition of the module to run has the list of outgoing connections
-    (_, outgoing) = modules M.! toName
-    -- The current state of that module
-    ms = moduleStates M.! toName
-    -- Run the module
-    (ms', maybePulse) = runModule ms fromName level
-    -- Create the outgoing events
-    newEvents = case maybePulse of
-      Nothing -> []
-      Just p -> map (toName,,p) outgoing
-    -- store the new module state
-    moduleStates' = M.insert toName ms' moduleStates
+-- oneEvent :: Modules -> ModuleStates -> PulseEvent -> (ModuleStates, [PulseEvent])
+-- oneEvent modules moduleStates (fromName, toName, level) =
+--   (moduleStates', newEvents)
+--   where
+--     -- The definition of the module to run has the list of outgoing connections
+--     (_, outgoing) = modules M.! toName
+--     -- The current state of that module
+--     ms = moduleStates M.! toName
+--     -- Run the module
+--     (ms', maybePulse) = runModule ms fromName level
+--     -- Create the outgoing events
+--     newEvents = case maybePulse of
+--       Nothing -> []
+--       Just p -> map (toName,,p) outgoing
+--     -- store the new module state
+--     moduleStates' = M.insert toName ms' moduleStates
