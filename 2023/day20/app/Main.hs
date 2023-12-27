@@ -1,5 +1,12 @@
 {-# LANGUAGE TupleSections #-}
 
+-- | Advent of Code, 2023.  Day 20.
+--
+-- I found this one unsatisfactory, because I failed to write a general
+-- solution that works with any input.  Looking at the graph of modules
+-- drawn by graphviz, I saw that there were four big clumps.  It turns out
+-- that each of the clumps repeats with a period that is a prime number.
+-- Multiplying those numbers produced the answer.
 module Main where
 
 import Advent (only, run)
@@ -43,7 +50,7 @@ part2 :: Modules -> Int
 part2 modules =
   case rxSourceModule of
     Nothing -> -1
-    Just rsm -> fst . head . runCycle . traceShowId $ groupOutput groups "cs" -- rsm
+    Just rsm -> product . traceShowId . map groupPeriod . traceShowId $ bigGroupNames
   where
     -- The unique module that outputs to rx, if there is one
     rxSourceModule = onlyOrNothing . filter (`moduleHasOutput` "rx") . M.elems $ modules
@@ -51,29 +58,17 @@ part2 modules =
     moduleHasOutput m n = n `elem` snd m
     -- Modules grouped into strongly connected components
     groups = groupModules modules
+    -- All groups with 4 or more modules
+    bigGroupNames = map (fst . mgEdgeOut) bigGroups
+    bigGroups = filter isBigGroup . M.elems $ groups
+    isBigGroup = (4 <) . M.size . mgModules
+    -- Cycle period of a group
+    groupPeriod =
+      fst . head . cycRepeat . groupOutput groups
 
 -- | Returns the stream of events (time, pulseType) output by a module
 moduleOutput :: Modules -> ModuleDef -> [(Int, PulseType)]
 moduleOutput _ _ = [(5, Low)]
-
--- | Solve part2 (I think) in a way that takes waaay to long to run.
-part2TooSlow :: Modules -> Int
-part2TooSlow modules = 0
-
--- modules
---   -- Create the initial state
---   & initialState
---   -- Push the button as many times as needed
---   & iterate (pushButton modules)
---   -- Extract the counts
---   & map machineCounts
---   -- How many times until rx count is non-zero?
---   & findIndex (\mc -> mcLowToRx mc > 0)
---   -- Extract answer
---   & fromJust
-
-part2Faster :: Modules -> Int
-part2Faster modules = 0
 
 -- | A group of modules with at most one input and at most one output.
 data ModuleGroup = ModuleGroup
@@ -494,7 +489,7 @@ groupOutput groups groupName =
     -- given one item in the sequence, produce the next one
     next :: (Int, CycleGenerator TimedPulses, ModuleStates, [PulseType]) -> (Int, CycleGenerator TimedPulses, ModuleStates, [PulseType])
     next (_, gen, mods, _) =
-      traceShowId (dt, gen', mods', out)
+      (dt, gen', mods', out)
       where
         (mods', _, out) = propagateEvent modules mods eventIn
         eventIn = (inputFrom, inputTo, only levels)
