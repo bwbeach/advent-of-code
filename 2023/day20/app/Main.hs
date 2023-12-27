@@ -2,7 +2,7 @@
 
 module Main where
 
-import Advent (run)
+import Advent (only, run)
 import qualified Data.Foldable as F
 import Data.Function ((&))
 import qualified Data.Graph.Wrapper as G
@@ -24,7 +24,7 @@ part1 modules =
     -- Create the initial state
     & initialState
     -- Add a dummy count
-    & (,EventCounts 0 0,EventCounts 0 0)
+    & (,EventCounts 0 0,[])
     -- Push the button as many times as needed, producing a list of (machineState, eventCount)
     & iterate (pushHelper modules)
     -- Take the results of the first 1000 pushes, without the first dummy counts
@@ -43,7 +43,7 @@ part2 :: Modules -> Int
 part2 modules =
   case rxSourceModule of
     Nothing -> -1
-    Just rsm -> -2 -- fst . head . runCycle . traceShowId $ groupOutput groups "ds" -- rsm
+    Just rsm -> fst . head . runCycle . traceShowId $ groupOutput groups "cs" -- rsm
   where
     -- The unique module that outputs to rx, if there is one
     rxSourceModule = onlyOrNothing . filter (`moduleHasOutput` "rx") . M.elems $ modules
@@ -209,8 +209,8 @@ data ModuleState
     BroadcastState
   | -- FlipFlops are either on or off
     FlipFlopState OnOrOff
-  | -- Conjunctions remember the last pulse from each input
-    ConjunctionState (M.Map String PulseType)
+  | -- Conjunctions remembers the last pulse from each input and the last pulse type sent
+    ConjunctionState (M.Map String PulseType) (Maybe PulseType)
   | -- Collectors hold a pulse type
     CollectorState (Maybe PulseType)
   deriving (Eq, Ord, Show)
@@ -270,25 +270,25 @@ initialState modules =
       case modType of
         Broadcast -> (name, BroadcastState)
         FlipFlop -> (name, FlipFlopState Off)
-        Conjunction -> (name, ConjunctionState (conState name))
+        Conjunction -> (name, ConjunctionState (conState name) Nothing)
     conState = M.fromList . map (,Low) . S.toList . (modToInputs M.!)
     modToInputs = mtsTranspose . M.fromList . map (second (S.fromList . snd)) . M.toList $ modules
 
 -- | Push the button.  Return the state after all events have been processed.
-pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts, EventCounts)
+pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts, [PulseType])
 pushButton modules start = propagateEvent modules start ("button", "broadcaster", Low)
 
 -- | Propagate one event through a group of modules.  Return the state after all events have been processed.
 -- Events are (fromModuleName, toModuleName, pulseLevel)
 -- State carried across events: (ModuleStates, allEventCounts, eventCountsToUndefined)
-propagateEvent :: Modules -> ModuleStates -> (ModuleName, ModuleName, PulseType) -> (ModuleStates, EventCounts, EventCounts)
+propagateEvent :: Modules -> ModuleStates -> (ModuleName, ModuleName, PulseType) -> (ModuleStates, EventCounts, [PulseType])
 propagateEvent modules start =
-  processEvents oneEvent (start, EventCounts 0 0, EventCounts 0 0)
+  processEvents oneEvent (start, EventCounts 0 0, [])
   where
     oneEvent (s, ec, ext) e@(_, toName, level) =
       if M.member toName modules
         then oneEventToModule (s, ec, ext) e
-        else ((s, bumpCounts ec level, bumpCounts ext level), [])
+        else ((s, bumpCounts ec level, ext ++ [level]), [])
 
     oneEventToModule (s, ec, ext) (fromName, toName, level) =
       ((s', ec', ext), newEvents)
@@ -331,12 +331,16 @@ runModule ms fromName pulseType =
       Low -> case ffs of
         Off -> (FlipFlopState On, Just High)
         On -> (FlipFlopState Off, Just Low)
-    ConjunctionState sources ->
-      (ConjunctionState sources', Just pulseType')
+    ConjunctionState sources prev ->
+      (ConjunctionState sources' (Just pulseType'), out)
       where
         sources' = M.insert fromName pulseType sources
         allHigh = all (== High) . M.elems $ sources'
         pulseType' = if allHigh then Low else High
+        out =
+          if prev == Just High && pulseType' == High
+            then Nothing
+            else Just pulseType'
 
 -- | Process and queue events until they are all done.
 -- Events are processed in the order generated.
@@ -455,9 +459,9 @@ evalModuleGroup defs name = findCycle 1 [((1, Low), 1)] -- TODO
 
 -- modGroup (cycleGen, modStates)
 
-type TimedPulse = (Int, PulseType)
+type TimedPulses = (Int, [PulseType])
 
-type GroupState = (CycleGenerator TimedPulse, ModuleStates, Int)
+type GroupState = (CycleGenerator TimedPulses, ModuleStates, Int)
 
 -- | The Cycle of timed pulses produced by a module group
 --
@@ -466,10 +470,10 @@ type GroupState = (CycleGenerator TimedPulse, ModuleStates, Int)
 -- The state consists of: (CycleGenerator, ModuleStates)
 --
 -- The output of `iterate` is a sequence of:
---    (timeSinceLastPulse, CycleGenerator, ModuleStates, Maybe PulseLevel)
--- The output of each iteration is maybe a TimedPulse, pluse the above state.
-groupOutput :: ModuleGroups -> String -> Cycle TimedPulse
-groupOutput _ "broadcaster" = Cycle {cycInitial = [], cycRepeat = [(1, Low)]}
+--    (timeSinceLastPulse, CycleGenerator, ModuleStates, [PulseLevel])
+-- The output of each iteration is maybe a TimedPulses, pluse the above state.
+groupOutput :: ModuleGroups -> String -> Cycle TimedPulses
+groupOutput _ "broadcaster" = Cycle {cycInitial = [], cycRepeat = [(1, [Low])]}
 groupOutput groups groupName =
   traceShowId $ findCycle (inputGen, modStates) (extractEvents seq)
   where
@@ -484,68 +488,22 @@ groupOutput groups groupName =
     -- Get the initial state of the modules in the group
     modStates = initialState modules
     -- start for iteration
-    start = (0, inputGen, modStates, Nothing)
+    start = (0, inputGen, modStates, [])
     -- sequence of states and outputs for the group
     seq = iterate next start
     -- given one item in the sequence, produce the next one
+    next :: (Int, CycleGenerator TimedPulses, ModuleStates, [PulseType]) -> (Int, CycleGenerator TimedPulses, ModuleStates, [PulseType])
     next (_, gen, mods, _) =
       traceShowId (dt, gen', mods', out)
       where
-        (mods', _, ecOut) = propagateEvent modules mods eventIn
-        eventIn = (inputFrom, inputTo, level)
-        ((dt, level), gen') = cycleGenNext gen
-        out = case ecOut of
-          EventCounts 0 0 -> Nothing
-          EventCounts _ 0 -> Just Low
-          EventCounts 0 _ -> Just High -- TODO: ???
-          _ -> error ("bad event count from group: " ++ show ecOut)
+        (mods', _, out) = propagateEvent modules mods eventIn
+        eventIn = (inputFrom, inputTo, only levels)
+        ((dt, levels), gen') = cycleGenNext gen
     -- extract (state, event) pairs from the infinite sequence
     extractEvents =
       go 0
       where
         go timeSoFar ((dt, gen, mods, out) : es) =
           case out of
-            Nothing -> go (timeSoFar + dt) es
-            Just p -> ((timeSoFar, p), (gen, mods)) : go 0 es
-
--- | Advance a module group into its next state
-advanceGroup ::
-  Modules -> -- module definitions in the group
-  ModuleStates -> -- starting state of the modules
-  (ModuleName, ModuleName, PulseType) -> -- input event from outside the module
-  (ModuleStates, EventCounts, EventCounts) -- new state and outputs from the module
-advanceGroup modules modStates (fromName, toName, pulseType) =
-  (modStates, EventCounts 0 0, EventCounts 0 0)
-
--- advanceGroup :: ModuleGroup -> GroupState -> (GroupState, Maybe TimedPulse)
--- advanceGroup mg (cg, moduleStates, tsp) =
---   ((cg', moduleStates', tsp + dt), Nothing) -- TODO time and pulse
---   where
---     -- The definitions of the modules in the group
---     modules = mgModules mg
---     -- Where the output of the group goes
---     (_, out) = mgEdgeOut mg
---     -- The next pulse to send.  `dt` is the delta time, `pt` is the pulse type
---     ((dt, pt), cg') = cycleGenNext cg
---     -- The pulse goes into the module group on the one inbound edge
---     (firstEventFrom, firstEventTo) = mgEdgeIn mg
---     -- The event to send in
---     firstEvent = (firstEventFrom, firstEventTo, pt)
---     -- Process the event and things cascading from it, producing the new module states
---     moduleStates' = processEvents oneEvent moduleStates firstEvent
---     -- How to handle one event
---     oneEvent s (fromName, toName, level) =
---       (s', newEvents)
---       where
---         -- The definition of the module to run has the list of outgoing connections
---         (_, outgoing) = M.findWithDefault (Collector, []) toName modules
---         -- the current state of that module
---         ms = M.findWithDefault (CollectorState Nothing) toName s
---         -- run the module
---         (ms', maybePulse) = runModule ms fromName level
---         -- create the outgoing events
---         newEvents = case maybePulse of
---           Nothing -> []
---           Just p -> map (toName,,p) outgoing
---         -- store the new module state
---         s' = M.insert toName ms' moduleStates
+            [] -> go (timeSoFar + dt) es
+            _ -> ((timeSoFar + dt, out), (gen, mods)) : go 0 es
