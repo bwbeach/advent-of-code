@@ -43,12 +43,14 @@ part2 :: Modules -> Int
 part2 modules =
   case rxSourceModule of
     Nothing -> -1
-    Just rsm -> fst . head . moduleOutput modules $ rsm
+    Just rsm -> -2 -- fst . head . runCycle . traceShowId $ groupOutput groups "ds" -- rsm
   where
     -- The unique module that outputs to rx, if there is one
     rxSourceModule = onlyOrNothing . filter (`moduleHasOutput` "rx") . M.elems $ modules
     -- Does the module have an output with the given name?
     moduleHasOutput m n = n `elem` snd m
+    -- Modules grouped into strongly connected components
+    groups = groupModules modules
 
 -- | Returns the stream of events (time, pulseType) output by a module
 moduleOutput :: Modules -> ModuleDef -> [(Int, PulseType)]
@@ -81,6 +83,8 @@ data ModuleGroup = ModuleGroup
   }
   deriving (Show)
 
+type ModuleGroups = M.Map ModuleName ModuleGroup
+
 mgOutputModule :: ModuleGroup -> ModuleName
 mgOutputModule = fst . mgEdgeOut
 
@@ -93,7 +97,7 @@ mgOutputTo = snd . mgEdgeOut
 --
 -- Returns a map from the name of the group's output module to the group.
 -- This lets the consumers of the group's output find the group.
-groupModules :: Modules -> M.Map ModuleName ModuleGroup
+groupModules :: Modules -> ModuleGroups
 groupModules modules =
   M.fromList . map (\g -> (mgOutputModule g, g)) . mapMaybe makeGroup $ sccs
   where
@@ -271,11 +275,15 @@ initialState modules =
     modToInputs = mtsTranspose . M.fromList . map (second (S.fromList . snd)) . M.toList $ modules
 
 -- | Push the button.  Return the state after all events have been processed.
+pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts, EventCounts)
+pushButton modules start = propagateEvent modules start ("button", "broadcaster", Low)
+
+-- | Propagate one event through a group of modules.  Return the state after all events have been processed.
 -- Events are (fromModuleName, toModuleName, pulseLevel)
 -- State carried across events: (ModuleStates, allEventCounts, eventCountsToUndefined)
-pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts, EventCounts)
-pushButton modules start =
-  processEvents oneEvent (start, EventCounts 0 0, EventCounts 0 0) ("button", "broadcaster", Low)
+propagateEvent :: Modules -> ModuleStates -> (ModuleName, ModuleName, PulseType) -> (ModuleStates, EventCounts, EventCounts)
+propagateEvent modules start =
+  processEvents oneEvent (start, EventCounts 0 0, EventCounts 0 0)
   where
     oneEvent (s, ec, ext) e@(_, toName, level) =
       if M.member toName modules
@@ -451,7 +459,64 @@ type TimedPulse = (Int, PulseType)
 
 type GroupState = (CycleGenerator TimedPulse, ModuleStates, Int)
 
+-- | The Cycle of timed pulses produced by a module group
+--
+-- Keeps sending events into the group until a cycle is found in the output.
+--
+-- The state consists of: (CycleGenerator, ModuleStates)
+--
+-- The output of `iterate` is a sequence of:
+--    (timeSinceLastPulse, CycleGenerator, ModuleStates, Maybe PulseLevel)
+-- The output of each iteration is maybe a TimedPulse, pluse the above state.
+groupOutput :: ModuleGroups -> String -> Cycle TimedPulse
+groupOutput _ "broadcaster" = Cycle {cycInitial = [], cycRepeat = [(1, Low)]}
+groupOutput groups groupName =
+  traceShowId $ findCycle (inputGen, modStates) (extractEvents seq)
+  where
+    -- Get info from the group definition
+    ModuleGroup
+      { mgEdgeIn = (inputFrom, inputTo),
+        mgEdgeOut = edgeOut,
+        mgModules = modules
+      } = groups M.! groupName
+    -- Get the input generator
+    inputGen = cycleGen (groupOutput groups inputFrom)
+    -- Get the initial state of the modules in the group
+    modStates = initialState modules
+    -- start for iteration
+    start = (0, inputGen, modStates, Nothing)
+    -- sequence of states and outputs for the group
+    seq = iterate next start
+    -- given one item in the sequence, produce the next one
+    next (_, gen, mods, _) =
+      traceShowId (dt, gen', mods', out)
+      where
+        (mods', _, ecOut) = propagateEvent modules mods eventIn
+        eventIn = (inputFrom, inputTo, level)
+        ((dt, level), gen') = cycleGenNext gen
+        out = case ecOut of
+          EventCounts 0 0 -> Nothing
+          EventCounts _ 0 -> Just Low
+          EventCounts 0 _ -> Just High -- TODO: ???
+          _ -> error ("bad event count from group: " ++ show ecOut)
+    -- extract (state, event) pairs from the infinite sequence
+    extractEvents =
+      go 0
+      where
+        go timeSoFar ((dt, gen, mods, out) : es) =
+          case out of
+            Nothing -> go (timeSoFar + dt) es
+            Just p -> ((timeSoFar, p), (gen, mods)) : go 0 es
+
 -- | Advance a module group into its next state
+advanceGroup ::
+  Modules -> -- module definitions in the group
+  ModuleStates -> -- starting state of the modules
+  (ModuleName, ModuleName, PulseType) -> -- input event from outside the module
+  (ModuleStates, EventCounts, EventCounts) -- new state and outputs from the module
+advanceGroup modules modStates (fromName, toName, pulseType) =
+  (modStates, EventCounts 0 0, EventCounts 0 0)
+
 -- advanceGroup :: ModuleGroup -> GroupState -> (GroupState, Maybe TimedPulse)
 -- advanceGroup mg (cg, moduleStates, tsp) =
 --   ((cg', moduleStates', tsp + dt), Nothing) -- TODO time and pulse
