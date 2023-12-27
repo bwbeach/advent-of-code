@@ -36,7 +36,7 @@ part1 modules =
     -- Multiple the low count and high count
     & (\(EventCounts a b) -> a * b)
   where
-    pushHelper :: Modules -> (MachineState, EventCounts) -> (MachineState, EventCounts)
+    pushHelper :: Modules -> (ModuleStates, EventCounts) -> (ModuleStates, EventCounts)
     pushHelper modules (s, ec) = pushButton modules s
 
 -- | Run part2 only on machines that have an "rx" module.
@@ -218,39 +218,6 @@ data ModuleState
 -- | The states of all of the modules in a machine
 type ModuleStates = M.Map ModuleName ModuleState
 
--- | Counts of activity in the machine
-data MachineCounts = MachineCounts
-  { mcLow :: Int, -- number of Low pulses delivered
-    mcHigh :: Int, -- number of High pulses delivered
-    mcLowToRx :: Int -- number of Low pulses delivered to "rx"
-  }
-  deriving (Show)
-
--- | The state of the whole machine consists of a state for each module
-data MachineState = MachineState
-  { machineModules :: ModuleStates,
-    machineCounts :: MachineCounts
-  }
-  deriving (Show)
-
--- | Initial state of the counters
-initialCounts :: MachineCounts
-initialCounts =
-  MachineCounts
-    { mcLow = 0,
-      mcHigh = 0,
-      mcLowToRx = 0
-    }
-
--- | Update the low/high counts kept in the machine state
-updateCounts :: PulseType -> String -> MachineCounts -> MachineCounts
-updateCounts p n MachineCounts {mcLow = low, mcHigh = high, mcLowToRx = lowRx} =
-  MachineCounts
-    { mcLow = if p == Low then low + 1 else low,
-      mcHigh = if p == High then high + 1 else high,
-      mcLowToRx = if p == Low && n == "rx" then lowRx + 1 else lowRx
-    }
-
 -- | Convert an input file into a set of module definitions
 parse :: String -> Modules
 parse =
@@ -294,9 +261,9 @@ bumpCounts (EventCounts a b) Low = EventCounts (a + 1) b
 bumpCounts (EventCounts a b) High = EventCounts a (b + 1)
 
 -- | What's the initial state of the machine?
-initialState :: Modules -> MachineState
+initialState :: Modules -> ModuleStates
 initialState modules =
-  MachineState {machineModules = moduleStates, machineCounts = initialCounts}
+  moduleStates
   where
     moduleStates = M.fromList . map modState . M.toList $ modules
     modState (name, (modType, _)) =
@@ -310,20 +277,19 @@ initialState modules =
 
 -- | Push the button.  Return the state after all events have been processed.
 -- Events are (fromModuleName, toModuleName, pulseLevel)
--- State carried across events: (MachineState, EventCounts)
-pushButton :: Modules -> MachineState -> (MachineState, EventCounts)
+-- State carried across events: (ModuleStates, EventCounts)
+pushButton :: Modules -> ModuleStates -> (ModuleStates, EventCounts)
 pushButton modules start =
   processEvents oneEvent (start, EventCounts 0 0) ("button", "broadcaster", Low)
   where
     oneEvent (s, ec) e =
-      ((MachineState {machineModules = mm', machineCounts = mc'}, ec'), newEvents)
+      ((s', ec'), newEvents)
       where
-        MachineState {machineModules = mm, machineCounts = mc} = s
         (fromName, toName, level) = e
         -- the definition of the module to run has the list of outgoing connections
         (_, outgoing) = M.findWithDefault (NoOp, []) toName modules
         -- current state of that module
-        ms = M.findWithDefault NoOpState toName mm
+        ms = M.findWithDefault NoOpState toName s
         -- let the module process the event
         (ms', maybePulse) = runModule ms fromName level
         -- create the outgoing events
@@ -331,9 +297,8 @@ pushButton modules start =
           Nothing -> []
           Just p -> map (toName,,p) outgoing
         -- update this module's state in the machine state
-        mm' = M.insert toName ms' mm
+        s' = M.insert toName ms' s
         -- update the pulse counts
-        mc' = updateCounts level toName mc
         ec' = bumpCounts ec level
 
 -- mc' = case maybePulse of
