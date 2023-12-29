@@ -1,2 +1,2 @@
-test.txt ? ?
-input.txt ? ?
+test.txt 42 ?
+input.txt 3642 ?
