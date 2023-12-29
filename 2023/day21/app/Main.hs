@@ -34,12 +34,12 @@ part1 problem =
     -- The initial set of locations is the one place where the 'S' is
     initial = S.singleton . findS $ problem
 
-    -- The total count from one triple
+    -- The total count from one tuple
     total (_, _, t, _) = t
 
 part2 :: Problem -> Int
 part2 problem =
-  (!! 1) . traceShowId . deltas . traceShowId . deltas . traceShowId . map S.size . take 20 $ allPossible bigProblem initial
+  (!! 1) . traceShowId . deltas . traceShowId . deltas . traceShowId . map total . take 200 $ allPossible2 bigProblem (initial, S.empty, 1, 0)
   where
     bigProblem = infiniteGrid problem
 
@@ -48,6 +48,12 @@ part2 problem =
 
     -- All odd-numbered elements of a list
     oddOnes (a : b : cs) = b : oddOnes cs
+
+    -- The total count from one tuple
+    total (_, _, t, _) = t
+
+    -- Every nth item in a list
+    every n items = head items : every n (drop (n - 1) items)
 
 traceSet :: (GenericGrid g) => g -> S.Set Point -> S.Set Point
 traceSet g s =
