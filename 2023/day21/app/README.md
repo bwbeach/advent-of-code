@@ -268,3 +268,24 @@ O                       O
  #        #O O   #   #  #
            #O#  ## #  #  
 ```
+
+### Third Idea
+
+An observation.  In my input data for this problem, there are no rocks in the row or column where the start location is.  Also, there are no rocks on the edge of the grid.
+
+For tiles directly up/down/left/right from the start tile, the first location visited will be the one on the edge and in the same row/column as the start location.  For tiles not in line with the start, the corner nearest the start will always be visited first.
+
+In both cases, the time to get to the first place visited on the tile is the manhattan distance from the start location.
+
+The initial visit location and time for any tile can be determined quicky and easily.
+
+### Fourth Idea
+
+Looking at on quarter of the final tiles, the ones to the right and upper/right of the start location, there are five different states a tile can be in after running the N iterations.
+
+![Tiles on a grid, filled out to edge of diamond](TileShapes.jpg)
+
+With some algebra and modulo arithmetic, we can calculate the number of each type of tile in this quadrant.  The contents of each type of tile will come from running the simulation for a small number of iterations just on that tile, given the starting location.
+
+Repeating that process for all four quadrants, and adding the central start tile, will give the answer.  Not that this works for the real problem, but the sample problem doesn't have direct connections from teh start location to the next tile.
+
