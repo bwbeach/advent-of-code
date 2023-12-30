@@ -177,4 +177,94 @@ This is the output on the test and on the actual input.  I don't see a pattern.
 [2,2,1,2,3,-2,7,-8,12,-5,10,-9,8,-9,18,-13,25,-26,28,-23,24,-19,28,-31,34,-30,33,-33,35,-34,34,-31,41,-36,29,-4,-4,10,-12,22,-25,36,-40,45,-32,25,-22,34,-35,39,-44,51,-59,65,-51,54,-49,49,-41,40,-1,15,-6,4,-4,8,-4,-27,27,-27,33,-33,42,-43,52,-70,86,-73,75,-77,87,-78,83,-90,93,-92,104,-107,120,-107,91,-92,91,-93,120,-127,134,-127,124,-118,121,-135,150,-133,149,-164,164,-160,163,-157,157,-146,150,-163,174,-162,149,-155,163,-129,116,-108,115,-125,117,-102,109,-97,112,-106,101,-114,108,-102,120,-122,138,-125,97,-91,102,-93,80,-88,112,-105,123,-123,121,-111,103,-103,134,-143,137,-139,153,-163,158,-155,159,-159,183,-199,183,-133,115,-93,85,-75,75,-65,55,-46,76,-100,96,-75,65,-57,43,-44,34,-31,68,-74,90,-95,108,-117,233,-201,212,-226,220,-216,220,-323]
 ```
 
+### Second Idea
 
+This idea is actually a question: What's the shape of the sets?
+
+They're mostly diamonds, with the edge at a constant manhattan distance from the starting point.  There will occasionally be gaps at the edges in the shadow of rocks.  The gaps quickly get filled in as the expansion continues.  
+
+In the diagrams below, the Os are the locations added in the most recent iteration.
+
+Here's an example with a couple of gaps on the left side:
+
+```
+    ##   #O      #   
+#        O O#   #    
+    #   O   O    #   
+#      #    #O       
+ ##   O    #  O     #
+     O         #     
+ #  O      #    O    
+  # #      #    #O   
+  O#          ##  O  
+ O #             # # 
+O                   O
+ O#               #O 
+  O    #          O  
+ # #             #   
+    O           O    
+     O#        O #   
+#   #  ### #  O     #
+  #    O     O #     
+        O   #  #     
+       # O O      #  
+ #      ##O#      #  
+```
+
+Both gaps in the perimiter are filled in on the next iteration when the diamond is one step bigger.
+
+```
+       ##  O   #   #   
+     ##   # O     #    
+ #       O   #   #     
+     #  O     O   #    
+ #     O#    # O       
+  ##  O     #   O    # 
+#    O          #O     
+  # O       #     O    
+#  # #      #    # O   
+  O #          ##   O  
+ O  #             # #O 
+O                     O
+ O #               # O 
+  O     #           O  
+  #O#             #O   
+    O             O   #
+#    O #         O#    
+ #   #O ### #   O    # 
+   #   O       O#      
+        O    #O #      
+        #O   O     #   
+  #      ## #      #  #
+#        # O    #   #  
+```
+
+And then the next step fills in the missing holes:
+
+```
+    ##      O ##   ###   
+        ## O O  #   #    
+      ##  O#  O    #     
+  #      O    #O  #      
+      # O       O  #    #
+  #    O #    #  O       
+#  ## O      #    O   #  
+##   O           # O     
+   #O        #      O    
+## O#O#      #    #  O  #
+# O  #          ##    O  
+#O   #             # # O 
+O                       O
+ O  #               #  O 
+  O      #            O #
+#  # #             # O   
+    O               O  ##
+ #   O  #          #     
+  #   # O### #    O   #  
+#   #  O         #       
+        O     # O#       
+         #     O    #    
+   #      ## #O     #  # 
+ #        #O O   #   #  #
+           #O#  ## #  #  
+```

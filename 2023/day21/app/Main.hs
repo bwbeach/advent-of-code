@@ -39,7 +39,7 @@ part1 problem =
 
 part2 :: Problem -> Int
 part2 problem =
-  (!! 1) . traceShowId . deltas . traceShowId . deltas . traceShowId . map total . take 200 $ allPossible2 bigProblem (initial, S.empty, 1, 0)
+  sum . map (S.size . traceSet bigProblem . newLocs) . take 30 $ allPossible2 bigProblem (initial, S.empty, 1, 0)
   where
     bigProblem = infiniteGrid problem
 
@@ -51,6 +51,9 @@ part2 problem =
 
     -- The total count from one tuple
     total (_, _, t, _) = t
+
+    -- The new locations added this iteration
+    newLocs (locs, _, _, _) = locs
 
     -- Every nth item in a list
     every n items = head items : every n (drop (n - 1) items)
