@@ -283,7 +283,7 @@ The initial visit location and time for any tile can be determined quicky and ea
 
 Looking at on quarter of the final tiles, the ones to the right and upper/right of the start location, there are five different states a tile can be in after running the N iterations.
 
-![Tiles on a grid, filled out to edge of diamond](TileShapes.jpg)
+![Tiles on a grid, filled out to edge of diamond](TileShapes.jpeg)
 
 With some algebra and modulo arithmetic, we can calculate the number of each type of tile in this quadrant.  The contents of each type of tile will come from running the simulation for a small number of iterations just on that tile, given the starting location.
 
