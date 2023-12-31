@@ -279,13 +279,127 @@ In both cases, the time to get to the first place visited on the tile is the man
 
 The initial visit location and time for any tile can be determined quicky and easily.
 
+The grid is square.  This will simplify the calculation of how many of each tile there is.
+
 ### Fourth Idea
 
 Looking at on quarter of the final tiles, the ones to the right and upper/right of the start location, there are five different states a tile can be in after running the N iterations.
 
+NOTE: This assumes an even tile size, so that succeeding A tiles have the same parity.  We can convert the problem to meet this criterion by doubling the tile in both dimensions.  This will make the start point no longer be in the center, if that's where it started.
+
 ![Tiles on a grid, filled out to edge of diamond](TileShapes.jpeg)
+
+NOTE: If the E tile is filled mostly to the right edge, the first D block will be immediately above it.
 
 With some algebra and modulo arithmetic, we can calculate the number of each type of tile in this quadrant.  The contents of each type of tile will come from running the simulation for a small number of iterations just on that tile, given the starting location.
 
 Repeating that process for all four quadrants, and adding the central start tile, will give the answer.  Not that this works for the real problem, but the sample problem doesn't have direct connections from teh start location to the next tile.
+
+### Computing tile counts 
+
+```haskell
+-- | The number of A, C, and D tiles.
+-- There's no need to compute the number of B or E tiles: there's always one of each.
+--
+-- This is the example in the diagram I drew:
+-- >>> tileCounts 100 (V2 50 50) 660
+-- (15,5,6)
+--
+-- This is the same example if the E block goes almost to the right edge
+-- >>> tileCounts 100 (V2 50 50) 740
+-- (20,6,7)
+tileCounts :: Int -> Point -> Int -> (Int, Int, Int)
+tileCounts tileSize startLoc n =
+  (aCount, cCount, dCount)
+  where
+    aCount = aCountOnAxis + aCountNextRow * (aCountNextRow + 1) `div` 2
+    cCount = aCountNextRow + 1
+    dCount = aCountNextRow + 2
+
+    -- Number of A tiles on the next row up from the axis
+    aCountNextRow = (afterCorner `div` tileSize) - 1
+
+    -- Number of iterations after reaching the corner of the first tile
+    -- on the next row.
+    afterCorner = afterEdge - (tileSize - sy)
+
+    -- The number of A tiles on the axis may be one less than the full count,
+    -- because the B tile will have been fully traversed, but may not have
+    -- filled in all the way.
+    aCountOnAxis = (afterEdge `div` tileSize) - 1
+
+    -- Number of iterations after leaving the start tile on the X axis
+    afterEdge = n - (tileSize - sx)
+
+    -- Manhattan distance from start to edge of next tile
+    startToEdge = tileSize - sx
+
+    -- Starting x and y
+    (V2 sx sy) = startLoc
+```
+
+### Computing Tile Counts and Step Counts in Each Tile
+
+I think we'll need to tighten that up a bit to make sure there aren't off-by-one errors.
+
+For each tile type (A, B, C, D, and E), we'll need not just the tile count.  We'll also need the starting point in that tile type, and the number of steps taken there.
+
+After working on the code to do this, it's seeming fragile and prone to off-by-one errors.  I made a record to hold information about one tile type: how many of them, which location is visited first, and how many steps are taken in that tile.
+
+```haskell
+-- | Information about one of the tile types.
+data TileInfo = TileInfo
+  { tileType :: Char, -- the name of this tile type
+    tileCount :: Int, -- number of tiles of this type
+    startLoc :: Point, -- the first location visited in the tile
+    stepCount :: Int -- the number of steps taken into this tile
+  }
+```
+
+The code in the previous section does, in fact, have off-by-one errors because `mod` is not right.  For the E tile, the number of steps ranges from 1 to N, not 0 to (N - 1).
+
+The code to figure out how many of which tile type there are is annoying.
+
+```haskell
+-- | TileInfo for all tiles in the upper-right quadrant, excluding the start tile
+--
+-- [... five more test cases ...]
+--
+-- >>> tileInfos 5 (V2 3 3) 13
+-- [Ax1(V2 1 1):10,Bx1(V2 1 3):6,Cx1(V2 1 1):8,Dx2(V2 1 1):3,Ex1(V2 1 3):1]
+tileInfos :: Int -> Point -> Int -> [TileInfo]
+tileInfos tileSize startLoc stepCount =
+  catMaybes [aInfo, bInfo, cInfo, dInfo, eInfo]
+  where
+    -- [... ommitted A and C ...]
+
+    -- there is a D tile if there are any steps past the corner
+    dInfo =
+      if 0 < stepsAfterCorner
+        then Just TileInfo {tileType = 'D', tileCount = dCount, startLoc = V2 1 1, stepCount = dSteps}
+        else Nothing
+      where
+        dSteps = stepsIntoCorner `modOne` tileSize
+        dCount = (stepsIntoCorner - 1) `div` tileSize + 1
+
+    -- [... ommitted B and E ...]
+
+    -- Manhattan distance from start to the corner of the start tile
+    stepsToCorner = (tileSize - sx) + (tileSize - sy)
+    stepsAfterCorner = stepCount - stepsToCorner
+    stepsIntoCorner = stepsAfterCorner - 1
+
+    -- Manhattan distance from start to the edge of the start tile
+    stepsToEdge = tileSize - sx
+    stepsAfterEdge = stepCount - stepsToEdge
+
+    -- Starting x and y
+    (V2 sx sy) = startLoc
+
+    modOne a b = ((a - 1) `mod` b) + 1
+```
+
+### Axis and Quadrant 
+
+Maybe it'll be better to not bother naming the types of tiles, and just generate them under reaching steady state where all the locations in a tile have been visited.  We can do this on the axis, and then again on the row above the axis, and fill in the triangle from that.
 
