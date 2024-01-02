@@ -485,3 +485,162 @@ triangleify =
     triangleArea n = n * (n + 1) `div` 2
 ```
 
+### How to test it?
+
+That's a lot of code to trust without testing it.  How about running the two implementations side by side?  The first is the higher-performance version of the one we started with, and the second is this new approach that finds repeated tiles in each quadrant.
+
+```haskell
+part2 :: Problem -> Int
+part2 problem =
+  length . filter (uncurry (/=) . traceShowId) . map (algo1 &&& algo2) $ [0 .. 100]
+  where
+    -- First algorithm: naive implementation
+    algo1 n = snd $ runTile bigProblem start (n + 1)
+    bigProblem = infiniteGrid problem
+
+    -- Second algorithm: quandrant scores, which requires an even-sized tile
+    algo2 = useQuandrants (double problem) start
+
+    -- Doubles the size of a tile, guaranteeing that it's even
+    double = Grid . M.fromList . concatMap doubleEntry . M.toList . gridMap
+    doubleEntry (V2 x y, a) =
+      [ (V2 x' y', a)
+        | x' <- [x, x + tileSize],
+          y' <- [y, y + tileSize]
+      ]
+
+    -- The start point
+    start = findS problem
+
+    tileSize = assert isSquare (x1 - x0 + 1)
+    isSquare = x1 - x0 == y1 - y0
+    (V2 x0 y0, V2 x1 y1) = gridBounds problem
+```
+
+The two implementations agree for up to 100 steps for this three-by-three tile:
+
+```
+S..
+.#.
+...
+```
+
+But they do not agree for this five-by-five tile, getting two different answers after 5 steps: `(28,26)`.
+
+```
+S....
+.###.
+.#...
+.#...
+.....
+```
+
+Now what?  I always tell myself that it's worth the time to write code that lets you see what's happening.  Now would be a good time.
+
+This code will print out the result of "running" a tile for a number of steps.
+
+```haskell
+runTile :: (GenericGrid g) => g -> Point -> Int -> (Bool, Int)
+runTile g p n =
+  traceSteps (take 6 steps) (hasConverged, score)
+  where
+    ...
+
+    traceSteps :: [(S.Set Point, x, y, z)] -> v -> v
+    traceSteps steps =
+      traceSet2 g combined
+      where
+        combined = foldl' S.union S.empty $ map getPoints steps
+        getPoints (s, _, _, _) = s
+```
+
+It looks like the old algorithm is coming up with a reasonable result.  It's the full diamond shape, minus rockes, and minus a few i the lower right where the steps haven't had time to flow around the obstacle.
+
+```
+### O### 
+#  OO#   
+# OOO#O  
+ OOOOOOO 
+OOOOOOOOO
+###OO### 
+# OOO#   
+#  OO#   
+    O    
+```
+
+The four quandrants don't look right.  The rocks haven't been rotated.
+
+```
+OOOOO
+O### 
+O#   
+O#   
+O    
+
+
+
+OOOOO
+ ###O
+ #OOO
+ # OO
+    O
+
+
+
+    O
+ ###O
+ #OOO
+ #OOO
+OOOOO
+
+
+
+OOOOO
+O### 
+O#   
+O#   
+O   
+```
+
+D'oh!  This should say `t` where it says `problem`:
+
+```haskell
+    doOneQuadrant (t, s@(V2 x0 y0)) =
+      quadrantScore problem s axisSteps cornerSteps
+```
+
+After fixing that, and a couple problems with overlapping variable names, now the agree up to 500 steps on the five-by-five.  And on the real input!  Now we have code that works.  It could still use some cleanup, but it works.
+
+```haskell
+useQuandrants :: Grid -> Point -> Int -> Int
+useQuandrants problem start n =
+  snd (runTile problem start (min (n + 1) (2 * tileSize + (n + 1) `mod` 2))) + (sum . map doOneQuadrant $ fourQuadrants)
+  where
+    doOneQuadrant (t, V2 xs ys) =
+      quadrantScore t (V2 1 ys) axisSteps cornerSteps
+      where
+        axisSteps = n - (tileSize - xs)
+        cornerSteps = axisSteps - (tileSize - ys + 1)
+
+    -- The four quadrants
+    fourQuadrants :: [(Grid, Point)]
+    fourQuadrants = take 4 . iterate rotate $ (problem, start)
+    -- map (first traceQuadrant) .
+
+    traceQuadrant g =
+      trace ("quadrant:\n" ++ gridFormat g ++ "\n\n") g
+
+    -- Rotate the (tile, start)
+    rotate (t, s) = (rotateTile t, rotatePoint s)
+
+    -- Rotate the a tile
+    rotateTile = Grid . M.fromList . map (first rotatePoint) . M.toList . gridMap
+
+    -- Rotate one point on the tile
+    rotatePoint (V2 x y) = V2 (tileSize - y + 1) x
+
+    tileSize = assert isSquare (x1 - x0 + 1)
+    isSquare = x1 - x0 == y1 - y0
+    (V2 x0 y0, V2 x1 y1) = gridBounds problem
+```
+

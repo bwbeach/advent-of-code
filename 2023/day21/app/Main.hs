@@ -14,9 +14,11 @@ import Advent
     run,
   )
 import Control.Exception (assert)
+import Data.List (foldl')
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes)
 import qualified Data.Set as S
+import Data.Tuple.Extra
 import Debug.Trace
 import Linear.V2 (V2 (..))
 import Topograph (pairs)
@@ -34,164 +36,82 @@ part1 problem =
   total . (!! 64) $ allPossible2 problem (initial, S.empty, 1, 0)
   where
     -- The initial set of locations is the one place where the 'S' is
-    initial = S.singleton . traceShowId . findS $ problem
+    initial = S.singleton . findS $ problem
 
     -- The total count from one tuple
     total (_, _, t, _) = t
 
 part2 :: Problem -> Int
 part2 problem =
-  sum . map (S.size . traceSet bigProblem . newLocs) . take 30 $ allPossible2 bigProblem (initial, S.empty, 1, 0)
+  length . filter (uncurry (/=) . traceShowId) . map ((algo1 &&& algo2) . traceShowId) $ [0 .. 500]
   where
+    -- First algorithm: naive implementation
+    algo1 n = snd $ runTile bigProblem start (n + 1)
     bigProblem = infiniteGrid problem
 
-    -- The initial set of locations is the one place where the 'S' is
-    initial = S.singleton . findS $ problem
+    -- Second algorithm: quandrant scores, which requires an even-sized tile
+    algo2 = useQuandrants (double problem) start
 
-    -- The total count from one tuple
-    total (_, _, t, _) = t
+    -- Doubles the size of a tile, guaranteeing that it's even
+    double = Grid . M.fromList . concatMap doubleEntry . M.toList . gridMap
+    doubleEntry (V2 x y, a) =
+      [ (V2 x' y', a)
+        | x' <- [x, x + tileSize],
+          y' <- [y, y + tileSize]
+      ]
 
-    -- The new locations added this iteration
-    newLocs (locs, _, _, _) = locs
+    -- The start point
+    start = findS problem
 
-    -- Every nth item in a list
-    every n items = head items : every n (drop (n - 1) items)
+    tileSize = assert isSquare (x1 - x0 + 1)
+    isSquare = x1 - x0 == y1 - y0
+    (V2 x0 y0, V2 x1 y1) = gridBounds problem
 
--- | The number of A, C, and D tiles.
--- There's no need to compute the number of B or E tiles: there's always one of each.
---
--- This is the example in the diagram I drew:
--- >>> tileCounts 100 (V2 50 50) 660
--- (15,5,6)
---
--- This is the same example if the E block goes almost to the right edge
--- >>> tileCounts 100 (V2 50 50) 740
--- (20,6,7)
-tileCounts :: Int -> Point -> Int -> (Int, Int, Int)
-tileCounts tileSize startLoc n =
-  (aCount, cCount, dCount)
+useQuandrants :: Grid -> Point -> Int -> Int
+useQuandrants problem start n =
+  snd (runTile problem start (min (n + 1) (2 * tileSize + (n + 1) `mod` 2))) + (sum . map doOneQuadrant $ fourQuadrants)
   where
-    aCount = aCountOnAxis + aCountNextRow * (aCountNextRow + 1) `div` 2
-    cCount = aCountNextRow + 1
-    dCount = aCountNextRow + 2
+    doOneQuadrant (t, V2 xs ys) =
+      quadrantScore t (V2 1 ys) axisSteps cornerSteps
+      where
+        axisSteps = n - (tileSize - xs)
+        cornerSteps = axisSteps - (tileSize - ys + 1)
 
-    -- Number of A tiles on the next row up from the axis
-    aCountNextRow = (afterCorner `div` tileSize) - 1
+    -- The four quadrants
+    fourQuadrants :: [(Grid, Point)]
+    fourQuadrants = take 4 . iterate rotate $ (problem, start)
+    -- map (first traceQuadrant) .
 
-    -- Number of iterations after reaching the corner of the first tile
-    -- on the next row.
-    afterCorner = afterEdge - (tileSize - sy)
+    traceQuadrant g =
+      trace ("quadrant:\n" ++ gridFormat g ++ "\n\n") g
 
-    -- The number of A tiles on the axis may be one less than the full count,
-    -- because the B tile will have been fully traversed, but may not have
-    -- filled in all the way.
-    aCountOnAxis = (afterEdge `div` tileSize) - 1
+    -- Rotate the (tile, start)
+    rotate (t, s) = (rotateTile t, rotatePoint s)
 
-    -- Number of iterations after leaving the start tile on the X axis
-    afterEdge = n - (tileSize - sx)
+    -- Rotate the a tile
+    rotateTile = Grid . M.fromList . map (first rotatePoint) . M.toList . gridMap
 
-    -- Manhattan distance from start to edge of next tile
-    startToEdge = tileSize - sx
+    -- Rotate one point on the tile
+    rotatePoint (V2 x y) = V2 (tileSize - y + 1) x
 
-    -- Starting x and y
-    (V2 sx sy) = startLoc
+    tileSize = assert isSquare (x1 - x0 + 1)
+    isSquare = x1 - x0 == y1 - y0
+    (V2 x0 y0, V2 x1 y1) = gridBounds problem
 
--- | Information about one of the tile types.
-data TileInfo = TileInfo
-  { tileType :: Char, -- the name of this tile type
-    tileCount :: Int, -- number of tiles of this type
-    startLoc :: Point, -- the first location visited in the tile
-    stepCount :: Int -- the number of steps taken into this tile
-  }
-
-instance Show TileInfo where
-  show x = [tileType x] ++ "x" ++ show (tileCount x) ++ "(" ++ show (startLoc x) ++ "):" ++ show (stepCount x)
-
--- | TileInfo for all tiles in the upper-right quadrant, excluding the start tile
---
--- >>> tileInfos 5 (V2 3 3) 4
--- [Ex1(V2 1 3):2]
---
--- >>> tileInfos 5 (V2 3 3) 7
--- [Dx1(V2 1 1):2,Ex1(V2 1 3):5]
---
--- >>> tileInfos 5 (V2 3 3) 8
--- [Bx1(V2 1 3):6,Dx1(V2 1 1):3,Ex1(V2 1 3):1]
---
--- >>> tileInfos 5 (V2 3 3) 10
--- [Bx1(V2 1 3):8,Dx1(V2 1 1):5,Ex1(V2 1 3):3]
---
--- >>> tileInfos 5 (V2 3 3) 11
--- [Bx1(V2 1 3):9,Cx1(V2 1 1):6,Dx2(V2 1 1):1,Ex1(V2 1 3):4]
---
--- >>> tileInfos 5 (V2 3 3) 13
--- [Ax1(V2 1 1):10,Bx1(V2 1 3):6,Cx1(V2 1 1):8,Dx2(V2 1 1):3,Ex1(V2 1 3):1]
-tileInfos :: Int -> Point -> Int -> [TileInfo]
-tileInfos tileSize startLoc stepCount =
-  catMaybes [aInfo, bInfo, cInfo, dInfo, eInfo]
+-- | What's the score in one quadrant?
+quadrantScore ::
+  Grid -> -- the tile
+  Point -> -- the starting point, at the left side of the axis tile
+  Int -> -- number of steps along the axis beyond the starting tile
+  Int -> -- number of steps into the triangle beyond the starting tile
+  Int -- total score for the quadrant
+quadrantScore grid start stepsOnAxis stepsInTriangle =
+  axisScore + triangleScore
   where
-    -- there are A tiles if there are any steps between the start tile and the B or E tile
-    aInfo =
-      if 0 < aCountOnAxis
-        then Just TileInfo {tileType = 'A', tileCount = aCount, startLoc = V2 1 1, stepCount = aSteps}
-        else Nothing
-      where
-        aCount = aCountOnAxis + ((aCountNextRow * (aCountNextRow + 1)) `div` 2)
-        aSteps = tileSize * 2 -- enough to visit entire tile
-
-    -- there is a C tile if there are enough steps for a full tile before D
-    cInfo =
-      if tileSize < stepsIntoCorner
-        then Just TileInfo {tileType = 'C', tileCount = cCount, startLoc = V2 1 1, stepCount = cSteps}
-        else Nothing
-      where
-        cCount = (stepsIntoCorner - 1) `div` tileSize
-        cSteps = (stepsIntoCorner `modOne` tileSize) + tileSize
-
-    -- there is a D tile if there are any steps past the corner
-    dInfo =
-      if 0 < stepsAfterCorner
-        then Just TileInfo {tileType = 'D', tileCount = dCount, startLoc = V2 1 1, stepCount = dSteps}
-        else Nothing
-      where
-        dSteps = stepsIntoCorner `modOne` tileSize
-        dCount = (stepsIntoCorner - 1) `div` tileSize + 1
-
-    -- there is a B tile if there are enough steps for a full tile between A and E
-    bInfo =
-      if tileSize < stepsAfterEdge
-        then Just TileInfo {tileType = 'B', tileCount = 1, startLoc = V2 1 sy, stepCount = bSteps}
-        else Nothing
-      where
-        bSteps = (stepsAfterEdge `modOne` tileSize) + tileSize
-
-    -- there is an E tile if there are enough steps to walk off the start tile
-    eInfo =
-      if 0 < stepsAfterEdge
-        then Just TileInfo {tileType = 'E', tileCount = 1, startLoc = V2 1 sy, stepCount = eSteps}
-        else Nothing
-      where
-        eSteps = stepsAfterEdge `modOne` tileSize
-
-    -- Number of A tiles on the row jut above the X axis
-    aCountNextRow = max 0 (((stepsIntoCorner - 1) `div` tileSize) - 1)
-
-    -- Number of A tiles on the X axis
-    aCountOnAxis = max 0 (((stepsAfterEdge - 1) `div` tileSize) - 1)
-
-    -- Manhattan distance from start to the corner of the start tile
-    stepsToCorner = (tileSize - sx) + (tileSize - sy)
-    stepsAfterCorner = stepCount - stepsToCorner
-    stepsIntoCorner = stepsAfterCorner - 1
-
-    -- Manhattan distance from start to the edge of the start tile
-    stepsToEdge = tileSize - sx
-    stepsAfterEdge = stepCount - stepsToEdge
-
-    -- Starting x and y
-    (V2 sx sy) = startLoc
-
-    modOne a b = ((a - 1) `mod` b) + 1
+    axisScore = sum . map (uncurry (*)) $ axis
+    triangleScore = sum . map (uncurry (*)) $ triangle
+    axis = tilesInRow grid start stepsOnAxis
+    triangle = triangleify $ tilesInRow grid (V2 1 1) stepsInTriangle
 
 -- | Given a sequence of (count, item) for a row, determine counts for a triangle of them.
 --
@@ -209,7 +129,7 @@ tileInfos tileSize startLoc stepCount =
 --
 -- >>> triangleify [(3, 'A'), (1, 'C'), (1, 'D')]
 -- [(6,'A'),(4,'C'),(5,'D')]
-triangleify :: [(Int, a)] -> [(Int, a)]
+triangleify :: (Show a) => [(Int, a)] -> [(Int, a)]
 triangleify =
   go 0
   where
@@ -285,7 +205,7 @@ tilesInRow g p n =
 --
 -- >>> runTile sampleTile (V2 1 3) 10
 -- (True,17)
-runTile :: Grid -> Point -> Int -> (Bool, Int)
+runTile :: (GenericGrid g) => g -> Point -> Int -> (Bool, Int)
 runTile g p n =
   (hasConverged, score)
   where
@@ -297,6 +217,31 @@ runTile g p n =
 
     -- the sequence of steps, starting with 0 steps to make indexing easier
     steps = (S.empty, S.empty, 0, 0) : allPossible2 g (S.singleton p, S.empty, 1, 0)
+
+    traceSteps :: [(S.Set Point, x, y, z)] -> v -> v
+    traceSteps steps =
+      traceSet2 g combined
+      where
+        combined = foldl' S.union S.empty $ map getPoints steps
+        getPoints (s, _, _, _) = s
+
+traceSet2 :: (GenericGrid g) => g -> S.Set Point -> a -> a
+traceSet2 g s =
+  if S.null s
+    then trace "empty\n\n"
+    else trace (pretty ++ "\n\n")
+  where
+    pretty = gridFormat . Grid . M.fromList $ (pairsWithO ++ rocksInRange)
+    gridOfOs = Grid . M.fromList $ pairsWithO
+    pairsWithO = map (,'O') . S.toList $ s
+    rocksInRange =
+      [ (p, '#')
+        | x <- [x0 .. x1],
+          y <- [y0 .. y1],
+          let p = V2 x y,
+          ggGet p g == '#'
+      ]
+    (V2 x0 y0, V2 x1 y1) = gridBounds gridOfOs
 
 traceSet :: (GenericGrid g) => g -> S.Set Point -> S.Set Point
 traceSet g s =
@@ -314,6 +259,13 @@ traceSet g s =
       ]
     (V2 x0 y0, V2 x1 y1) = gridBounds gridOfOs
 
+traceSimpleSetId :: Char -> S.Set Point -> S.Set Point
+traceSimpleSetId c s =
+  trace pretty s
+  where
+    pretty = gridFormat . Grid . M.fromList $ pairsWithC
+    pairsWithC = map (,c) . S.toList $ s
+
 -- | A grid of cells on an integer plane, holding Chars.
 class GenericGrid g where
   ggGet :: Point -> g -> Char
@@ -326,6 +278,15 @@ data InfiniteGrid
   = InfiniteGrid (Int -> Int) (Int -> Int) Grid
 
 -- | Create an infinite grid
+--
+-- >>> ggGet (V2 1 1) (infiniteGrid $ gridParse "ABC\nDEF\n")
+-- 'A'
+--
+-- >>> ggGet (V2 1 4) (infiniteGrid $ gridParse "ABC\nDEF\n")
+-- 'D'
+--
+-- >>> ggGet (V2 0 0) (infiniteGrid $ gridParse "ABC\nDEF\n")
+-- 'F'
 infiniteGrid :: Grid -> InfiniteGrid
 infiniteGrid g =
   InfiniteGrid mapX mapY g
@@ -337,8 +298,8 @@ infiniteGrid g =
 
     -- Size of the tiled grid
     (V2 x0 y0, V2 x1 y1) = gridBounds g
-    width = x1 - x0
-    height = y1 - y0
+    width = x1 - x0 + 1
+    height = y1 - y0 + 1
 
 instance GenericGrid InfiniteGrid where
   ggGet (V2 x y) (InfiniteGrid mapX mapY g) = gridGet (V2 (mapX x) (mapY y)) g
