@@ -43,6 +43,25 @@ part1 problem =
 
 part2 :: Problem -> Int
 part2 problem =
+  useQuadrants (double problem) start 26501365
+  where
+    -- Doubles the size of a tile, guaranteeing that it's even
+    double = Grid . M.fromList . concatMap doubleEntry . M.toList . gridMap
+    doubleEntry (V2 x y, a) =
+      [ (V2 x' y', a)
+        | x' <- [x, x + tileSize],
+          y' <- [y, y + tileSize]
+      ]
+
+    -- The start point
+    start = findS problem
+
+    tileSize = assert isSquare (x1 - x0 + 1)
+    isSquare = x1 - x0 == y1 - y0
+    (V2 x0 y0, V2 x1 y1) = gridBounds problem
+
+part2_test :: Problem -> Int
+part2_test problem =
   length . filter (uncurry (/=) . traceShowId) . map ((algo1 &&& algo2) . traceShowId) $ [0 .. 500]
   where
     -- First algorithm: naive implementation
@@ -50,7 +69,7 @@ part2 problem =
     bigProblem = infiniteGrid problem
 
     -- Second algorithm: quandrant scores, which requires an even-sized tile
-    algo2 = useQuandrants (double problem) start
+    algo2 = useQuadrants (double problem) start
 
     -- Doubles the size of a tile, guaranteeing that it's even
     double = Grid . M.fromList . concatMap doubleEntry . M.toList . gridMap
@@ -67,8 +86,8 @@ part2 problem =
     isSquare = x1 - x0 == y1 - y0
     (V2 x0 y0, V2 x1 y1) = gridBounds problem
 
-useQuandrants :: Grid -> Point -> Int -> Int
-useQuandrants problem start n =
+useQuadrants :: Grid -> Point -> Int -> Int
+useQuadrants problem start n =
   snd (runTile problem start (min (n + 1) (2 * tileSize + (n + 1) `mod` 2))) + (sum . map doOneQuadrant $ fourQuadrants)
   where
     doOneQuadrant (t, V2 xs ys) =

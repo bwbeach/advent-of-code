@@ -452,7 +452,7 @@ tilesInRow g p n =
     (V2 x0 y0, V2 x1 y1) = gridBounds g
 ```
 
-The function above can be used for the tiles along the X axis.  It can also be used for the row just above the X axis, and then the rest of the triangle in that quandrant can be extrapolated from it.
+The function above can be used for the tiles along the X axis.  It can also be used for the row just above the X axis, and then the rest of the triangle in that quadrant can be extrapolated from it.
 
 Once we have the counts for the row just above the axis, this function will figure out the counts for the entire quadrant:
 
@@ -461,7 +461,7 @@ Once we have the counts for the row just above the axis, this function will figu
 --
 -- The input [(3, 'A'), (1, 'C'), (1, 'D')] represents the row AAACD
 --
--- If that's the bottom row of the upper right quandrant, the full quadrant looks like this:
+-- If that's the bottom row of the upper right quadrant, the full quadrant looks like this:
 --
 --     D
 --     CD
@@ -498,8 +498,8 @@ part2 problem =
     algo1 n = snd $ runTile bigProblem start (n + 1)
     bigProblem = infiniteGrid problem
 
-    -- Second algorithm: quandrant scores, which requires an even-sized tile
-    algo2 = useQuandrants (double problem) start
+    -- Second algorithm: quadrant scores, which requires an even-sized tile
+    algo2 = useQuadrants (double problem) start
 
     -- Doubles the size of a tile, guaranteeing that it's even
     double = Grid . M.fromList . concatMap doubleEntry . M.toList . gridMap
@@ -568,7 +568,7 @@ OOOOOOOOO
     O    
 ```
 
-The four quandrants don't look right.  The rocks haven't been rotated.
+The four quadrants don't look right.  The rocks haven't been rotated.
 
 ```
 OOOOO
@@ -612,8 +612,8 @@ D'oh!  This should say `t` where it says `problem`:
 After fixing that, and a couple problems with overlapping variable names, now the agree up to 500 steps on the five-by-five.  And on the real input!  Now we have code that works.  It could still use some cleanup, but it works.
 
 ```haskell
-useQuandrants :: Grid -> Point -> Int -> Int
-useQuandrants problem start n =
+useQuadrants :: Grid -> Point -> Int -> Int
+useQuadrants problem start n =
   snd (runTile problem start (min (n + 1) (2 * tileSize + (n + 1) `mod` 2))) + (sum . map doOneQuadrant $ fourQuadrants)
   where
     doOneQuadrant (t, V2 xs ys) =
@@ -644,3 +644,27 @@ useQuandrants problem start n =
     (V2 x0 y0, V2 x1 y1) = gridBounds problem
 ```
 
+### It works 
+
+This got the right answer.  Woohoo!
+
+```haskell
+part2 :: Problem -> Int
+part2 problem =
+  useQuadrants (double problem) start 26501365
+  where
+    -- Doubles the size of a tile, guaranteeing that it's even
+    double = Grid . M.fromList . concatMap doubleEntry . M.toList . gridMap
+    doubleEntry (V2 x y, a) =
+      [ (V2 x' y', a)
+        | x' <- [x, x + tileSize],
+          y' <- [y, y + tileSize]
+      ]
+
+    -- The start point
+    start = findS problem
+
+    tileSize = assert isSquare (x1 - x0 + 1)
+    isSquare = x1 - x0 == y1 - y0
+    (V2 x0 y0, V2 x1 y1) = gridBounds problem
+```
