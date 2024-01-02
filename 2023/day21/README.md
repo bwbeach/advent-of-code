@@ -403,3 +403,85 @@ tileInfos tileSize startLoc stepCount =
 
 Maybe it'll be better to not bother naming the types of tiles, and just generate them under reaching steady state where all the locations in a tile have been visited.  We can do this on the axis, and then again on the row above the axis, and fill in the triangle from that.
 
+Let's gather information as pairs, summarizing tiles that have the same score: (howMany, score)
+
+```haskell
+-- | Information about one type of tile
+-- The pair holds:
+--    - How many of this kind of tile there are
+--    - The score (number of occupied locations)
+type TileCountAndScore = (Int, Int)
+```
+
+This function figures out a row of tiles, assuming you're starting at the left side and using as many tiles as you need for the number of steps given.  
+
+```haskell
+-- | TileCountAndScore for all of the tiles going right on the X axis. 
+--
+-- Because we assume a clear path to the right from the start point, the
+-- start point on the next tile will be the same. 
+-- >>> tilesInRow sampleTile (V2 1 3) 1
+-- [(1,1)]
+--
+-- >>> tilesInRow sampleTile (V2 1 3) 13
+-- [(1,15),(1,14),(1,1)]
+--
+-- >>> tilesInRow sampleTile (V2 1 3) 19
+-- [(2,15),(1,14),(1,1)]
+tilesInRow ::
+  Grid -> -- One tile
+  Point -> -- The starting point on that tile (always on the left edge)
+  Int -> -- How many steps, after leaving the start tile
+  [TileCountAndScore] -- All of the tiles the steps will visit along the X axis
+tilesInRow g p n =
+  reverse $ go n 0
+  where
+    -- Figure out the list of tiles, starting with the last one, given
+    -- the number of steps up to starting this tile, and the number of steps 
+    -- to be taken after crossing this tile.
+    go steps stepsAfter
+      | steps <= 0 = []
+      | hasConverged = assert (steps `mod` tileSize == 0) [(steps `div` tileSize, score)]
+      | otherwise = (1, score) : go (steps - stepsInThisTile) (stepsInThisTile + stepsAfter)
+      where
+        (hasConverged, score) = runTile g p (stepsInThisTile + stepsAfter)
+        stepsInThisTile = if steps `mod` tileSize == 0 then tileSize else steps `mod` tileSize
+
+    tileSize = assert isSquare (x1 - x0 + 1)
+    isSquare = x1 - x0 == y1 - y0
+    (V2 x0 y0, V2 x1 y1) = gridBounds g
+```
+
+The function above can be used for the tiles along the X axis.  It can also be used for the row just above the X axis, and then the rest of the triangle in that quandrant can be extrapolated from it.
+
+Once we have the counts for the row just above the axis, this function will figure out the counts for the entire quadrant:
+
+```haskell
+-- | Given a sequence of (count, item) for a row, determine counts for a triangle of them.
+--
+-- The input [(3, 'A'), (1, 'C'), (1, 'D')] represents the row AAACD
+--
+-- If that's the bottom row of the upper right quandrant, the full quadrant looks like this:
+--
+--     D
+--     CD
+--     ACD
+--     AACD
+--     AAACD
+--
+-- So the answer from this function is: [(6, 'A'), (4, 'C'), (5, 'D'))
+--
+-- >>> triangleify [(3, 'A'), (1, 'C'), (1, 'D')]
+-- [(6,'A'),(4,'C'),(5,'D')]
+triangleify :: [(Int, a)] -> [(Int, a)]
+triangleify =
+  go 0
+  where
+    -- given the number of items already processed, do the rest
+    go _ [] = []
+    go b ((n, a) : nas) = (triangleArea (b + n) - triangleArea b, a) : go (b + n) nas
+
+    -- area of an triangle with base of length n
+    triangleArea n = n * (n + 1) `div` 2
+```
+

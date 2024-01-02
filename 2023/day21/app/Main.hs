@@ -193,6 +193,111 @@ tileInfos tileSize startLoc stepCount =
 
     modOne a b = ((a - 1) `mod` b) + 1
 
+-- | Given a sequence of (count, item) for a row, determine counts for a triangle of them.
+--
+-- The input [(3, 'A'), (1, 'C'), (1, 'D')] represents the row AAACD
+--
+-- If that's the bottom row of the upper right quandrant, the full quadrant looks like this:
+--
+--     D
+--     CD
+--     ACD
+--     AACD
+--     AAACD
+--
+-- So the answer from this function is: [(6, 'A'), (4, 'C'), (5, 'D'))
+--
+-- >>> triangleify [(3, 'A'), (1, 'C'), (1, 'D')]
+-- [(6,'A'),(4,'C'),(5,'D')]
+triangleify :: [(Int, a)] -> [(Int, a)]
+triangleify =
+  go 0
+  where
+    -- given the number of items already processed, do the rest
+    go _ [] = []
+    go b ((n, a) : nas) = (triangleArea (b + n) - triangleArea b, a) : go (b + n) nas
+
+    -- area of an triangle with base of length n
+    triangleArea n = n * (n + 1) `div` 2
+
+-- | Information about one type of tile
+-- The pair holds:
+--    - How many of this kind of tile there are
+--    - The score (number of occupied locations)
+type TileCountAndScore = (Int, Int)
+
+-- | An 6x6 grid to use in examples
+--
+--    ......
+--    ...#..
+--    ......
+--    ..##..
+--    ..#...
+--    ......
+sampleTile :: Grid
+sampleTile = gridParse "......\n...#..\n.S....\n..##..\n..#...\n......\n"
+
+-- | TileCountAndScore for all of the tiles going right on the X axis.
+--
+-- Because we assume a clear path to the right from the start point, the
+-- start point on the next tile will be the same.
+-- >>> tilesInRow sampleTile (V2 1 3) 1
+-- [(1,1)]
+--
+-- >>> tilesInRow sampleTile (V2 1 3) 13
+-- [(1,15),(1,14),(1,1)]
+--
+-- >>> tilesInRow sampleTile (V2 1 3) 19
+-- [(2,15),(1,14),(1,1)]
+tilesInRow ::
+  Grid -> -- One tile
+  Point -> -- The starting point on that tile (always on the left edge)
+  Int -> -- How many steps, after leaving the start tile
+  [TileCountAndScore] -- All of the tiles the steps will visit along the X axis
+tilesInRow g p n =
+  reverse $ go n 0
+  where
+    -- Figure out the list of tiles, starting with the last one, given
+    -- the number of steps up to starting this tile, and the number of steps
+    -- to be taken after crossing this tile.
+    go steps stepsAfter
+      | steps <= 0 = []
+      | hasConverged = assert (steps `mod` tileSize == 0) [(steps `div` tileSize, score)]
+      | otherwise = (1, score) : go (steps - stepsInThisTile) (stepsInThisTile + stepsAfter)
+      where
+        (hasConverged, score) = runTile g p (stepsInThisTile + stepsAfter)
+        stepsInThisTile = if steps `mod` tileSize == 0 then tileSize else steps `mod` tileSize
+
+    tileSize = assert isSquare (x1 - x0 + 1)
+    isSquare = x1 - x0 == y1 - y0
+    (V2 x0 y0, V2 x1 y1) = gridBounds g
+
+-- | Run n steps in a tile, return (hasConverged, score)
+--
+-- >>> runTile sampleTile (V2 1 3) 1
+-- (False,1)
+--
+-- >>> runTile sampleTile (V2 1 3) 4
+-- (False,8)
+--
+-- >>> runTile sampleTile (V2 1 3) 8
+-- (False,17)
+--
+-- >>> runTile sampleTile (V2 1 3) 10
+-- (True,17)
+runTile :: Grid -> Point -> Int -> (Bool, Int)
+runTile g p n =
+  (hasConverged, score)
+  where
+    -- We've converged on a steady state (module parity) if no new locations were added
+    hasConverged = S.null justAdded
+
+    -- The n-th step into the tile
+    (justAdded, _, score, _) = steps !! n
+
+    -- the sequence of steps, starting with 0 steps to make indexing easier
+    steps = (S.empty, S.empty, 0, 0) : allPossible2 g (S.singleton p, S.empty, 1, 0)
+
 traceSet :: (GenericGrid g) => g -> S.Set Point -> S.Set Point
 traceSet g s =
   trace (pretty ++ "\n\n") s
