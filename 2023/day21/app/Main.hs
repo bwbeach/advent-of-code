@@ -217,6 +217,9 @@ tilesInRow g p n =
 
 -- | Run n steps in a tile, return (hasConverged, score)
 --
+-- An answer hasConverged iff every higher step count with the same
+-- parity will give the same answer.
+--
 -- >>> runTile sampleTile (V2 1 3) 1
 -- (False,1)
 --
