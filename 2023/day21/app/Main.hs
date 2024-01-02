@@ -7,9 +7,11 @@ import Advent
     Point,
     gridBounds,
     gridFormat,
+    gridFromList,
     gridGet,
     gridMap,
     gridParse,
+    gridToList,
     only,
     run,
   )
@@ -46,7 +48,7 @@ part2 problem =
   useQuadrants (double problem) start 26501365
   where
     -- Doubles the size of a tile, guaranteeing that it's even
-    double = Grid . M.fromList . concatMap doubleEntry . M.toList . gridMap
+    double = gridFromList . concatMap doubleEntry . gridToList
     doubleEntry (V2 x y, a) =
       [ (V2 x' y', a)
         | x' <- [x, x + tileSize],
@@ -56,9 +58,17 @@ part2 problem =
     -- The start point
     start = findS problem
 
-    tileSize = assert isSquare (x1 - x0 + 1)
+    -- The size of the (square tile)
+    tileSize = getTileSize problem
+
+-- | Return the size of an input tile.
+-- Assumes that the tile is square, and the size applies in both directions.
+getTileSize :: Grid -> Int
+getTileSize grid =
+  assert isSquare (x1 - x0 + 1)
+  where
     isSquare = x1 - x0 == y1 - y0
-    (V2 x0 y0, V2 x1 y1) = gridBounds problem
+    (V2 x0 y0, V2 x1 y1) = gridBounds grid
 
 part2_test :: Problem -> Int
 part2_test problem =
@@ -72,7 +82,7 @@ part2_test problem =
     algo2 = useQuadrants (double problem) start
 
     -- Doubles the size of a tile, guaranteeing that it's even
-    double = Grid . M.fromList . concatMap doubleEntry . M.toList . gridMap
+    double = gridFromList . concatMap doubleEntry . gridToList
     doubleEntry (V2 x y, a) =
       [ (V2 x' y', a)
         | x' <- [x, x + tileSize],
@@ -82,9 +92,7 @@ part2_test problem =
     -- The start point
     start = findS problem
 
-    tileSize = assert isSquare (x1 - x0 + 1)
-    isSquare = x1 - x0 == y1 - y0
-    (V2 x0 y0, V2 x1 y1) = gridBounds problem
+    tileSize = getTileSize problem
 
 useQuadrants :: Grid -> Point -> Int -> Int
 useQuadrants problem start n =
@@ -108,14 +116,12 @@ useQuadrants problem start n =
     rotate (t, s) = (rotateTile t, rotatePoint s)
 
     -- Rotate the a tile
-    rotateTile = Grid . M.fromList . map (first rotatePoint) . M.toList . gridMap
+    rotateTile = gridFromList . map (first rotatePoint) . gridToList
 
     -- Rotate one point on the tile
     rotatePoint (V2 x y) = V2 (tileSize - y + 1) x
 
-    tileSize = assert isSquare (x1 - x0 + 1)
-    isSquare = x1 - x0 == y1 - y0
-    (V2 x0 y0, V2 x1 y1) = gridBounds problem
+    tileSize = getTileSize problem
 
 -- | What's the score in one quadrant?
 quadrantScore ::
@@ -207,9 +213,7 @@ tilesInRow g p n =
         (hasConverged, score) = runTile g p (stepsInThisTile + stepsAfter)
         stepsInThisTile = if steps `mod` tileSize == 0 then tileSize else steps `mod` tileSize
 
-    tileSize = assert isSquare (x1 - x0 + 1)
-    isSquare = x1 - x0 == y1 - y0
-    (V2 x0 y0, V2 x1 y1) = gridBounds g
+    tileSize = getTileSize g
 
 -- | Run n steps in a tile, return (hasConverged, score)
 --
@@ -377,4 +381,4 @@ deltas = map (uncurry . flip $ (-)) . pairs
 
 -- | Coordinates of the 'S' on the grid
 findS :: Grid -> Point
-findS = only . map fst . filter ((== 'S') . snd) . M.toList . gridMap
+findS = only . map fst . filter ((== 'S') . snd) . gridToList
