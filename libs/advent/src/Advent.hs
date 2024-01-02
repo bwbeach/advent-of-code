@@ -11,6 +11,7 @@ module Advent
     gridBounds,
     gridEmpty,
     gridFormat,
+    gridFromList,
     gridGet,
     gridSet,
     gridMap,
@@ -184,8 +185,12 @@ gridMap :: Grid -> M.Map (V2 Int) Char
 gridMap (Grid m) = m
 
 -- | Returns the contents of a grid as a list
-gridToList :: Grid -> [(V2 Int, Char)]
+gridToList :: Grid -> [(Point, Char)]
 gridToList (Grid m) = M.toList m
+
+-- | Converts a list to a Grid
+gridFromList :: [(Point, Char)] -> Grid
+gridFromList = Grid . M.fromList
 
 -- | Bounds of a grid: upper left corner and lower right corner
 gridBounds :: Grid -> (V2 Int, V2 Int)
