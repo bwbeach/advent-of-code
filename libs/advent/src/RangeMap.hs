@@ -198,7 +198,7 @@ rmUpdate k f (RangeMap oldKvs) =
 
 -- | Merge two RangeMaps using a function that combines their values, if present.
 --
--- >>> rmMerge (\x y -> (+) <$> x <*> y) (rmSingleton (Range 1 6) 3) (rmSingleton (Range 3 8) 5)
+-- >>> rmMerge (\x y -> (+) <$> (x :: Maybe Int) <*> (y :: Maybe Int)) (rmSingleton (Range 1 6) 3) (rmSingleton (Range 3 8) 5)
 -- rmFromList [(Range 3 6,8)]
 --
 -- >>> rmMerge (\x y -> x) (rmSingleton (Range 1 6) 3) (rmSingleton (Range 3 8) 5)
