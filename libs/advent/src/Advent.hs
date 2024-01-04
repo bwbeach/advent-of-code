@@ -19,6 +19,8 @@ module Advent
     gridToList,
     life,
     memoize,
+    mtsInsert,
+    mtsFromList,
     neighbors,
     neighborsAndSelf,
     runMemoize,
@@ -33,9 +35,10 @@ import Control.Monad.State.Lazy
     State,
     evalState,
   )
+import Data.List (foldl')
 import Data.Map.Strict qualified as M
 import Data.Maybe (fromJust, fromMaybe, mapMaybe)
-import GHC.TypeLits qualified as Ints
+import Data.Set qualified as S
 import Linear.V2 (V2 (..))
 import System.Exit (exitFailure, exitSuccess)
 
@@ -295,3 +298,19 @@ life neighbors newCellState = iterate (lifeStep neighbors newCellState)
 -- [1,9,3]
 replace :: (Eq a) => a -> a -> [a] -> [a]
 replace a b = map (\x -> if x == a then b else x)
+
+-- | Add an entry to a map-to-set
+-- A map-to-set is a map where each value is a set of values inserted for that key.
+mtsInsert :: (Ord k, Ord v) => k -> v -> M.Map k (S.Set v) -> M.Map k (S.Set v)
+mtsInsert k v m =
+  M.insert k newSet m
+  where
+    oldSet = M.findWithDefault S.empty k m
+    newSet = S.insert v oldSet
+
+-- | Build a map-to-set from a list of (k, v) pairs
+--
+-- >>> mtsFromList [(1, 'a'), (2, 'b'), (2, 'c')]
+-- fromList [(1,fromList "a"),(2,fromList "bc")]
+mtsFromList :: (Ord k, Ord v) => [(k, v)] -> M.Map k (S.Set v)
+mtsFromList = foldl' (\m (k, v) -> mtsInsert k v m) M.empty
