@@ -246,3 +246,62 @@ part1 problem =
     -- Block numbers that can be removed
     canRemove = S.difference allBlocks cannotRemove
 ```
+
+That did it.
+
+## Part 2
+
+Part 2 asks for us to compute, for each block, the number of blocks that would disintegrate because of removing just it.
+
+Having a picture to look at would be nice.  Let's generate a diagram for the test data by writing a temporary function for part 2 that generates a [dot file](https://graphviz.org/doc/info/lang.html) for a graph where edges represent "rests on".
+
+```haskell
+part2 :: Problem -> Int
+part2 problem =
+  trace diagram 0
+  where
+    diagram = unlines $ before ++ edgeSpecs ++ after
+    before = ["digraph {"]
+    after = ["}"]
+    edges = makeIsRestingOn . dropAllBlocks . map cubesInBlock $ problem
+    blockName n = [['A' ..] !! (n - 1)]
+    edgeSpecs = map edgeSpec edges
+    edgeSpec (a, b) = "  " ++ blockName a ++ " -> " ++ blockName b
+```
+
+After running that output through Graphviz, we get:
+
+![dependencies for blocks A through G](test.png)
+
+Just for fun, here's a too-tiny-to-read-the-font picture for my real input:
+
+![dependencies for real input](input.png)
+
+My first thought is that this is a reachability problem.  For a block X, we can remove it from the graph.  The nodes that are still reachable from the ground would not go away.  The unreachable nodes are the ones that X is the sole supporter for and that would go away if X were removed.
+
+This would be expensive: create a new graph for each block, then run rechability on it.  This is at least O(n^2), and probably O(n^2 log n) to account for graph lookups.
+
+(Went away and thought about other things for a while.)
+
+Maybe there's a way to propagate information up from the bottom.  Something about block dependencies.
+
+How about this: propagate up, and compute for each block the set of blocks whose removal would cause it to go away.  For blocks at the bottom, the set is just the block inself; no other block can make it go away.  For other blocks, the set is itself plus the intersection of the sets for all the blocks it's resting on.
+
+In the test input, the first few sets would look like this:
+
+```
+    A: {A}
+    B: {A, B}
+    C: {A, C}
+```
+
+Now, when we get to D, we take the intersection of the sets for B and C, which is just {A}, and then add D to get:
+
+```
+    D: {A, D}
+```
+
+That seems good.  Let's go for it.  Let's start with the code to generate those sets, and then print them out for the test data and see if they look right.
+
+
+

@@ -171,4 +171,17 @@ makeIsRestingOn =
         else Nothing
 
 part2 :: Problem -> Int
-part2 = length
+part2 problem =
+  trace diagram 0
+  where
+    diagram = unlines $ before ++ edgeSpecs ++ after
+    before = ["digraph {"]
+    after = ["}"]
+    edges = makeIsRestingOn . dropAllBlocks . map cubesInBlock $ problem
+    edgeSpecs = map edgeSpec edges
+    edgeSpec (a, b) = "  " ++ blockName a ++ " -> " ++ blockName b
+    blockName n =
+      if n < 26
+        then [letter n]
+        else blockName (n `div` 26) ++ [letter (n `mod` 26)]
+    letter n = ['A' ..] !! n
