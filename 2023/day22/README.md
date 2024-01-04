@@ -227,4 +227,22 @@ makeIsRestingOn =
 
 ### Wiring it up 
 
-I think that's about all the pieces
+I think that's about all the pieces, now let's wire them up.
+
+```haskell
+part1 :: Problem -> Int
+part1 problem =
+  S.size canRemove
+  where
+    -- Build a map from block number to the set of blocks it's resting on
+    isRestingOn = mtsFromList . makeIsRestingOn . dropAllBlocks . map cubesInBlock $ problem
+
+    -- If block A is resting on a set of only one block B, then block B cannot be removed.
+    cannotRemove = S.fromList . map (head . S.toList) . filter ((== 1) . S.size) . M.elems $ isRestingOn
+
+    -- All block numbers
+    allBlocks = S.fromList [1 .. length problem]
+
+    -- Block numbers that can be removed
+    canRemove = S.difference allBlocks cannotRemove
+```

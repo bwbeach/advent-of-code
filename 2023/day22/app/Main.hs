@@ -45,7 +45,7 @@ parseLine lineString =
 
 part1 :: Problem -> Int
 part1 problem =
-  length canRemove
+  S.size canRemove
   where
     -- Build a map from block number to the set of blocks it's resting on
     isRestingOn = mtsFromList . makeIsRestingOn . dropAllBlocks . map cubesInBlock $ problem
@@ -54,10 +54,10 @@ part1 problem =
     cannotRemove = S.fromList . map (head . S.toList) . filter ((== 1) . S.size) . M.elems $ isRestingOn
 
     -- All block numbers
-    allBlocks = [1 .. length problem]
+    allBlocks = S.fromList [1 .. length problem]
 
     -- Block numbers that can be removed
-    canRemove = filter (not . (`S.member` cannotRemove)) allBlocks
+    canRemove = S.difference allBlocks cannotRemove
 
 -- | Create a diagram with Y and Z axes, like in the problem description.
 diagramXZ :: Problem -> String
