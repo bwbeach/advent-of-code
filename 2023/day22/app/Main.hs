@@ -179,7 +179,7 @@ part2 problem =
     after = ["}"]
     edges = makeIsRestingOn . dropAllBlocks . map cubesInBlock $ problem
     edgeSpecs = map edgeSpec edges
-    edgeSpec (a, b) = "  " ++ blockName a ++ " -> " ++ blockName b
+    edgeSpec (a, b) = "  " ++ blockName (a - 1) ++ " -> " ++ blockName (b - 1)
     blockName n =
       if n < 26
         then [letter n]
