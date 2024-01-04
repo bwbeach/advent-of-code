@@ -2,6 +2,7 @@ module Main where
 
 import Advent (gridFormat, gridFromList, mtsFromList, run)
 import Data.Bifunctor (Bifunctor (bimap))
+import qualified Data.Graph.Wrapper as G
 import Data.List (foldl', sortOn)
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
@@ -170,18 +171,56 @@ makeIsRestingOn =
         then Just (b2, b1)
         else Nothing
 
+-- | Part 2
+-- After generating the set of blocks that would cause each block to go away, add them up.
+-- Subtract one from each one, because the block itself is not included in the total.
 part2 :: Problem -> Int
 part2 problem =
-  trace diagram 0
+  sum . map ((\n -> n - 1) . length) . M.elems $ sets
   where
-    diagram = unlines $ before ++ edgeSpecs ++ after
-    before = ["digraph {"]
-    after = ["}"]
     edges = makeIsRestingOn . dropAllBlocks . map cubesInBlock $ problem
-    edgeSpecs = map edgeSpec edges
-    edgeSpec (a, b) = "  " ++ blockName (a - 1) ++ " -> " ++ blockName (b - 1)
-    blockName n =
-      if n < 26
-        then [letter n]
-        else blockName (n `div` 26) ++ [letter (n `mod` 26)]
-    letter n = ['A' ..] !! n
+    blocks = [1 .. length problem]
+    sets = makeSets blocks edges
+
+-- | List of blocks, with supporting blocks earlier in the list.
+-- If block A rests on block B, A will be later in the list.
+-- Input is an is-resting-on relation in the form of a list of pairs (topBlock, supporter).
+--
+-- >>> blocksBuildingUp [1 .. 4] [(4, 2), (4, 3), (2, 1), (3, 1)]
+-- [1,2,3,4]
+blocksBuildingUp :: [Int] -> [(Int, Int)] -> [Int]
+blocksBuildingUp blockNums =
+  reverse . G.topologicalSort . G.fromVerticesEdges vertices
+  where
+    vertices = map (\a -> (a, a)) blockNums
+
+-- | Build the would-be-disintegrate-by set for each block.
+--
+-- Implemented as a fold where the accumulator is a map from block to the blocks
+-- that would cause it to be disintegrated.
+--
+-- >>> makeSets [1 .. 4] [(4, 2), (4, 3), (2, 1), (3, 1)]
+-- fromList [(1,[1]),(2,[2,1]),(3,[3,1]),(4,[4,1])]
+makeSets :: [Int] -> [(Int, Int)] -> M.Map Int [Int]
+makeSets blockNums edges =
+  foldl' addBlock M.empty blocks
+  where
+    -- The blocks in the order we'll process them
+    blocks = blocksBuildingUp blockNums edges
+
+    -- Map from block to set of directly supporting blocks
+    blockToSupporters = mtsFromList edges
+
+    -- Add the would-be-disintegrated-by set for one block, including the block inself
+    addBlock :: M.Map Int [Int] -> Int -> M.Map Int [Int]
+    addBlock soFar b = M.insert b (b : wouldBeDisintegratedBy soFar b) soFar
+
+    -- What other blocks would cause b to disintegrate?
+    wouldBeDisintegratedBy soFar = S.toList . intersectAll . map (S.fromList . (soFar M.!)) . getSupporters
+
+    -- What blocks are supporting b?
+    getSupporters b = S.toList (M.findWithDefault S.empty b blockToSupporters)
+
+    -- Intersection of a list of sets; empty if there are no sets
+    intersectAll [] = S.empty
+    intersectAll sets = foldl1 S.intersection sets

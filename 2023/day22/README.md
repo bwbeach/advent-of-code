@@ -253,6 +253,8 @@ That did it.
 
 Part 2 asks for us to compute, for each block, the number of blocks that would disintegrate because of removing just it.
 
+### Initial thinking
+
 Having a picture to look at would be nice.  Let's generate a diagram for the test data by writing a temporary function for part 2 that generates a [dot file](https://graphviz.org/doc/info/lang.html) for a graph where edges represent "rests on".
 
 ```haskell
@@ -303,5 +305,138 @@ Now, when we get to D, we take the intersection of the sets for B and C, which i
 
 That seems good.  Let's go for it.  Let's start with the code to generate those sets, and then print them out for the test data and see if they look right.
 
+### Ordering the blocks
+
+We're going to need to work from the bottom up as the sets propagate up.  It seems like there should be a graph algorithm that does that.  Searching for "directed graph node ordering" led me to the [Wikipedia page on Topological sorting](https://en.wikipedia.org/wiki/Topological_sorting).  Now that I know the term to use, is there a Haskell library that does that?  It looks like [Data.Graph.Wrapper](https://hackage.haskell.org/package/graph-wrapper-0.2.6.0/docs/Data-Graph-Wrapper.html#v:topologicalSort) has a function that does it.  Yay!  
+
+I found Data.Graph.Wrapper earlier this season, and it's a pleasure to use.  It's slightly annoying building a graph when we don't already have a list of vertices.  Note that the the graph libraries use pairs of index and vertex data, (i, v), for vertices.  This uses the block number for both i and v. 
+
+```haskell
+-- | List of blocks, with supporting blocks earlier in the list.
+-- If block A rests on block B, A will be later in the list.
+-- Input is an is-resting-on relation in the form of a list of pairs (topBlock, supporter).
+--
+-- >>> blocksBuildingUp [(4, 2), (4, 3), (2, 1), (3, 1)]
+-- [1,2,3,4]
+blocksBuildingUp :: [(Int, Int)] -> [Int]
+blocksBuildingUp = reverse . G.topologicalSort . graphFromEdges
+
+-- | Given a list of edges, return a graph.
+-- Deduce the list of nodes from all mentions in the list of edges.
+--
+-- >>> graphFromEdges [(1, 2), (2, 3), (4, 2)]
+-- fromVerticesEdges [(1,1),(2,2),(3,3),(4,4)] [(1,2),(2,3),(4,2)]
+graphFromEdges :: (Ord a) => [(a, a)] -> G.Graph a a
+graphFromEdges edges =
+  G.fromVerticesEdges vertices edges
+  where
+    vertices = map (\a -> (a, a)) . S.toList . S.fromList . concatMap (\(a, b) -> [a, b]) $ edges
+```
+
+### Calculate the would-be-disintegrated-by sets 
+
+Here's the core logic:
+
+```haskell
+-- | Build the would-be-disintegrate-by set for each block.
+--
+-- Implemented as a fold where the accumulator is a map from block to the blocks
+-- that would cause it to be disintegrated.
+--
+-- >>> makeSets [(4, 2), (4, 3), (2, 1), (3, 1)]
+-- fromList [(1,[1]),(2,[2,1]),(3,[3,1]),(4,[4,1])]
+makeSets :: [(Int, Int)] -> M.Map Int [Int]
+makeSets edges =
+  foldl' addBlock M.empty blocks
+  where
+    -- The blocks in the order we'll process them
+    blocks = blocksBuildingUp edges
+
+    -- Map from block to set of directly supporting blocks
+    blockToSupporters = mtsFromList edges
+
+    -- Add the would-be-disintegrated-by set for one block, including the block inself
+    addBlock :: M.Map Int [Int] -> Int -> M.Map Int [Int]
+    addBlock soFar b = M.insert b (b : wouldBeDisintegratedBy soFar b) soFar
+
+    -- What other blocks would cause b to disintegrate?
+    wouldBeDisintegratedBy soFar = S.toList . intersectAll . map (S.fromList . (soFar M.!)) . getSupporters
+
+    -- What blocks are supporting b?
+    getSupporters b = S.toList (M.findWithDefault S.empty b blockToSupporters)
+
+    -- Intersection of a list of sets; empty if there are no sets
+    intersectAll [] = S.empty
+    intersectAll sets = foldl1 S.intersection sets
+```
+
+The result looks as expected for the test data.  Yay!
+
+```
+"A": ["A"]
+"B": ["B","A"]
+"C": ["C","A"]
+"D": ["D","A"]
+"E": ["E","A"]
+"F": ["F","A"]
+"G": ["G","A","F"]
+```
+
+Running it on the real data crashes.  Yuck.
+
+### Fixing with the real data
+
+The problem is:
+
+```
+day22: Map.!: given key is not an element in the map
+```
+
+Hmmm.  Let's see what the key is:
+
+```haskell
+    wouldBeDisintegratedBy soFar = S.toList . intersectAll . map (S.fromList . trace ("AAA " + show b) (soFar M.!)) . getSupporters
+```
+
+```
+AAA 1
+AAA 2
+day22: Map.!: given key is not an element in the map
+```
+
+Maybe there's a block that isn't mentioned in the list of edges?  That would mean it didn't show up in the graph.  That seems like a bug, even if it's not this problem.  
+
+Let's re-do `blocksBuildingUp` to explicitly take the list of all block numbers.  Maybe the graph library designers knew what they were doing when they required an explicit list of verices.
+
+```haskell
+-- | List of blocks, with supporting blocks earlier in the list.
+-- If block A rests on block B, A will be later in the list.
+-- Input is an is-resting-on relation in the form of a list of pairs (topBlock, supporter).
+--
+-- >>> blocksBuildingUp [1 .. 4] [(4, 2), (4, 3), (2, 1), (3, 1)]
+-- [1,2,3,4]
+blocksBuildingUp :: [Int] -> [(Int, Int)] -> [Int]
+blocksBuildingUp blockNums =
+  reverse . G.topologicalSort . G.fromVerticesEdges vertices
+  where
+    vertices = map (\a -> (a, a)) blockNums
+```
+
+`makeSets` gets a similar update, not pasted here.  And now the problem goes away.
+
+### Get the answer 
+
+```haskell
+-- | Part 2
+-- After generating the set of blocks that would cause each block to go away, add them up.
+-- Subtract one from each one, because the block itself is not included in the total.
+part2 :: Problem -> Int
+part2 problem =
+  sum . map ((\n -> n - 1) . length) . M.elems $ sets
+  where
+    edges = makeIsRestingOn . dropAllBlocks . map cubesInBlock $ problem
+    blocks = [1 .. length problem]
+    sets = makeSets blocks edges
+```
 
 
