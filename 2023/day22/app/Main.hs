@@ -1,12 +1,17 @@
 module Main where
 
-import Advent (run)
+import Advent (gridFormat, gridFromList, mtsFromList, run)
+import Data.Bifunctor (Bifunctor (bimap))
 import Data.List (foldl', sortOn)
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
-import Data.Maybe (isNothing)
-import Data.Tuple.Extra (both)
+import Data.Maybe (catMaybes, isNothing, mapMaybe)
+import qualified Data.Set as S
+import Data.Tuple.Extra (both, first, second)
+import Debug.Trace
+import Linear.V2 (V2 (..))
 import Linear.V3 (V3 (..))
+import Topograph (pairs)
 
 main :: IO ()
 main = run parse part1 part2
@@ -38,19 +43,47 @@ parseLine lineString =
       where
         [x, y, z] = map read . splitOn "," $ pointString
 
-part1 :: Problem -> Point3
+part1 :: Problem -> Int
 part1 problem =
-  0 -- trace diagram 0
+  length canRemove
+  where
+    -- Build a map from block number to the set of blocks it's resting on
+    isRestingOn = mtsFromList . makeIsRestingOn . dropAllBlocks . map cubesInBlock $ problem
+
+    -- If block A is resting on a set of only one block B, then block B cannot be removed.
+    cannotRemove = S.fromList . map (head . S.toList) . filter ((== 1) . S.size) . M.elems $ isRestingOn
+
+    -- All block numbers
+    allBlocks = [1 .. length problem]
+
+    -- Block numbers that can be removed
+    canRemove = filter (not . (`S.member` cannotRemove)) allBlocks
+
+-- | Create a diagram with Y and Z axes, like in the problem description.
+diagramXZ :: Problem -> String
+diagramXZ problem =
+  gridFormat grid
   where
     m = dropAllBlocks . map cubesInBlock $ problem
-    diagram = reverse
-    allPoints = concatMap bothPoints problem
-    bothPoints (p1, p2) = [p1, p2]
-    maxY = maximum . map (getY . fst) . M.toList $ m
-    maxZ = maximum . map (getZ . fst) . M.toList $ m
-    getX (V3 x _ _) = x
-    getY (V3 _ y _) = y
-    getZ (V3 _ _ z) = z
+    yzToBlockNums = mtsFromList . map (first p3ToXz) . M.toList $ m
+    grid = gridFromList . map (second (blocksToChar . S.toList)) . M.toList $ yzToBlockNums
+    p3ToXz (V3 x _ z) = V2 x (negate z)
+
+-- | Create a diagram with Y and Z axes, like in the problem description.
+diagramYZ :: Problem -> String
+diagramYZ problem =
+  gridFormat grid
+  where
+    m = dropAllBlocks . map cubesInBlock $ problem
+    yzToBlockNums = mtsFromList . map (first p3ToYz) . M.toList $ m
+    grid = gridFromList . map (second (blocksToChar . S.toList)) . M.toList $ yzToBlockNums
+    p3ToYz (V3 _ y z) = V2 y (negate z)
+
+-- | When making diagrams, what letter to show, given the list of blocks in that square
+blocksToChar :: [Int] -> Char
+blocksToChar [] = '.'
+blocksToChar [n] = ['A' ..] !! (n - 1)
+blocksToChar _ = '?'
 
 -- | "Cube" alias for clarity
 type Cube = Point3
@@ -118,6 +151,24 @@ dropAllBlocks blocks =
     bottomToTop = sortOn minZ blocks
     minZ = minimum . map getZ
     getZ (V3 _ _ z) = z
+
+-- | Builds the relation is-resting-on as a list of pairs.
+--
+-- The map is sorted on points, which will group points with the same x and y,
+-- and sort by z within that.  We can look at adjacent items in the list to
+-- find one block sitting on another.
+--
+-- >>> makeIsRestingOn (M.fromList [(V3 3 3 6, 5), (V3 3 3 5, 5), (V3 3 3 3, 3), (V3 3 3 2, 2)])
+-- [(3,2)]
+makeIsRestingOn :: M.Map Point3 Int -> [(Int, Int)]
+makeIsRestingOn =
+  mapMaybe checkOne . pairs . M.toList
+  where
+    checkOne :: ((Point3, Int), (Point3, Int)) -> Maybe (Int, Int)
+    checkOne ((V3 x1 y1 z1, b1), (V3 x2 y2 z2, b2)) =
+      if x1 == x2 && y1 == y2 && z1 + 1 == z2 && b1 /= b2
+        then Just (b2, b1)
+        else Nothing
 
 part2 :: Problem -> Int
 part2 = length

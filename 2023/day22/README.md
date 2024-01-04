@@ -170,21 +170,61 @@ The description of the problem the expected results of dropping all the blocks f
 This is the expected state looking from out on the x axis, with positive y to the right, and positive z up.  The blocks are named `['A' ..]`
 
 ```
- x
+ y
 012
 .G. 6
 .G. 5
-FFF 4
-D.E 3 z
-??? 2
-.A. 1
+.F. 4
+??? 3 z
+B.C 2
+AAA 1
 --- 0
 ```
 
+This code produces the same diagram, without the axis labels:
 
+```haskell
+-- | Create a diagram with Y and Z axes, like in the problem description.
+diagramXZ :: Problem -> String
+diagramXZ problem =
+  gridFormat grid
+  where
+    m = dropAllBlocks . map cubesInBlock $ problem
+    yzToBlockNums = mtsFromList . map (first p3ToXz) . M.toList $ m
+    grid = gridFromList . map (second (blocksToChar . S.toList)) . M.toList $ yzToBlockNums
+    p3ToXz (V3 x _ z) = V2 x (negate z)
 
-### Building an is-resting-on graph 
+-- | When making diagrams, what letter to show, given the list of blocks in that square
+blocksToChar :: [Int] -> Char
+blocksToChar [] = '.'
+blocksToChar [n] = ['A' ..] !! (n - 1)
+blocksToChar _ = '?'
+```
 
-It seems like it would be useful to have a directed graph that says a block is resting on another block.
+### Building an is-resting-on relation 
 
+It seems like it would be useful to have a relation that says a block is resting on another block.  Let's make a list of pairs `(topBlock, blockSupportingIt)`.
 
+```haskell
+-- | Builds the relation is-resting-on as a list of pairs.
+--
+-- The map is sorted on points, which will group points with the same x and y,
+-- and sort by z within that.  We can look at adjacent items in the list to
+-- find one block sitting on another.
+--
+-- >>> makeIsRestingOn (M.fromList [(V3 3 3 5, 5), (V3 3 3 3, 3), (V3 3 3 2, 2)])
+-- [(3,2)]
+makeIsRestingOn :: M.Map Point3 Int -> [(Int, Int)]
+makeIsRestingOn =
+  mapMaybe checkOne . pairs . M.toList
+  where
+    checkOne :: ((Point3, Int), (Point3, Int)) -> Maybe (Int, Int)
+    checkOne ((V3 x1 y1 z1, b1), (V3 x2 y2 z2, b2)) =
+      if x1 == x2 && y1 == y2 && z1 + 1 == z2 && b1 /= b2
+        then Just (b2, b1)
+        else Nothing
+```
+
+### Wiring it up 
+
+I think that's about all the pieces
