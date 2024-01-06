@@ -18,20 +18,7 @@ import Debug.Trace
 import Linear.V2 (V2 (..))
 
 main :: IO ()
--- main = run parse part1 part2
-main = do
-  text <- readFile "input.txt"
-  let graph = weightedGraph . parse $ text
-  let dotText = unlines . dot . M.toList $ graph
-  writeFile "input.dot" dotText
-  where
-    dot graph = ["digraph {"] ++ edges graph ++ ["}"]
-    edges = concatMap edgesFromVertex
-    edgesFromVertex (src, es) =
-      map oneEdge es
-      where
-        oneEdge (dst, steps) = "  " ++ vertexName src ++ " -> " ++ vertexName dst ++ " [ label =\"" ++ show steps ++ "\" ];"
-        vertexName (V2 x y) = "\"" ++ show x ++ "," ++ show y ++ "\""
+main = run parse part1 part2
 
 type Problem = Grid
 
@@ -40,7 +27,7 @@ parse = gridParse
 
 -- | Part 1
 part1 :: Problem -> Int
-part1 grid = fromJust $ longestPath grid startPos S.empty (endState grid)
+part1 grid = longestPathInGraph (weightedGraph grid) startPos (fst (endState grid))
 
 neighbors :: Point -> [Point]
 neighbors p = [p + d | d <- directions]
@@ -51,11 +38,13 @@ directions = [V2 1 0, V2 (-1) 0, V2 0 1, V2 0 (-1)]
 
 -- | Part 2
 part2 :: Problem -> Int
-part2 g =
-  -- fromJust $ longestPath g' startPos S.empty (endState g')
-  M.size (traceShowId (weightedGraph sampleGrid))
-  where
-    g' = replaceArrows g
+part2 grid =
+  longestPathInGraph (weightedGraph (replaceArrows grid)) startPos (fst (endState grid))
+
+-- -- fromJust $ longestPath g' startPos S.empty (endState g')
+-- M.size (traceShowId (weightedGraph sampleGrid))
+-- where
+--   g' = replaceArrows g
 
 -- | Replace all arrows with dots in a grid
 replaceArrows :: Grid -> Grid
