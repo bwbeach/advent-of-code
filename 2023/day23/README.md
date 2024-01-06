@@ -350,5 +350,47 @@ And this is my real input data:
 
 ![weighted graph for real input](input.png)
 
+### Longest path using graph
+
+It's a little more straightforward than doing the walking through the maze.
+
+```haskell
+-- | Find the longest path using a graph
+--
+-- >>> longestPathInGraph (weightedGraph sampleGrid) (V2 2 1) (V2 4 5)
+-- 6
+longestPathInGraph :: M.Map Point [(Point, Int)] -> Point -> Point -> Int
+longestPathInGraph graph start end =
+  fromJust $ go (S.singleton start) 0 start
+  where
+    go history steps current =
+      if current == end
+        then Just steps
+        else maximumMaybes maybeNexts
+      where
+        maybeNexts =
+          [ go (S.insert v history) (s + steps) v
+            | (v, s) <- nexts current,
+              not (v `S.member` history)
+          ]
+        nexts v = graph M.! v
+```
+
 ### Redo part 1 with graph
 
+It works.
+
+```haskell
+part1 :: Problem -> Int
+part1 grid = longestPathInGraph (weightedGraph grid) startPos (fst (endState grid))
+```
+
+### Try part 2 
+
+It's now fast enough.
+
+```haskell 
+part2 :: Problem -> Int
+part2 grid =
+  longestPathInGraph (weightedGraph (replaceArrows grid)) startPos (fst (endState grid))
+```
