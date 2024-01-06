@@ -387,7 +387,7 @@ part1 grid = longestPathInGraph (weightedGraph grid) startPos (fst (endState gri
 
 ### Try part 2 
 
-It's now fast enough.
+It's now fast enough.  Yay!
 
 ```haskell 
 part2 :: Problem -> Int
