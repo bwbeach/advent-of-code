@@ -45,9 +45,6 @@ parse text =
       where
         [x, y, z] = map read . words $ s
 
-part2 :: Problem -> Int
-part2 = length
-
 -- | Projects a 3D thing onto the x/y plane.
 dropZ :: V3 a -> V2 a
 dropZ (V3 x y _) = V2 x y
@@ -131,3 +128,23 @@ allPairs =
     headWithRest [] = []
     headWithRest [_] = []
     headWithRest (a : as) = map (a,) as
+
+-- | The prime factors of a number
+--
+-- >>> factors 60
+-- [2,2,3,5]
+factors :: Integer -> [Integer]
+factors n =
+  go n 2
+  where
+    go 1 _ = []
+    go x a =
+      if (x `mod` a) == 0
+        then a : go (x `div` a) a
+        else go x (next a)
+
+    next 2 = 3
+    next n = n + 2
+
+part2 :: Problem -> Int
+part2 = length

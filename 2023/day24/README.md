@@ -225,3 +225,31 @@ intersectInFutureInRange range (a, b) =
 
 Now it works.
 
+## Part 2
+
+Part 2 is a very different problem: Find a straight-line constant-velocity trajectory for a rock that will intersect with the line for every hailstone, and intersect at the same time the hailstone is there.
+
+Some initial thoughts:
+ - We'll need a line that intersects with all hailstones.
+ - Picking a point and time on the trajectories of two hailstones will determine a possible trajectory for a rock. 
+ - We can pick any two hailstones as the starting point.
+ - Picking the two times that the rock intersects with those two hailstones will determine the rock's trajectory. 
+ - We can enumerate those in O(t^2) time (t is time).
+ - Not every choices for t1 and t2 will result in an integer velocity for the rock; non-integer ones can be eliminated quickly.
+ - How big will the t in the answer get?
+ - Input coordinates are in the tens of trillions, so t could get big.
+
+Some things we'll need:
+ - A generator for pairs of times to try
+ - Creation of the rock's trajectory given two (location, time) pairs.
+ - Checking whether a hailstone intersects a trajectory.
+
+### Intersecting rock trajectory with hailstones
+
+I have trouble imagining things in 3D, but it seems like a small number of lines (hailstone trajectories) that do not intersect and are not parallel would be sufficient to determine the path of the rock.
+
+Searching for "3d line that intersects other lines" found this question on the math stack exchange: [Find 3D line incident on four given 3D lines](https://math.stackexchange.com/questions/2230011/find-3d-line-incident-on-four-given-3d-lines).  It says you can do it by constructing the unique quadratic surface such that three lines lie on it.  Then there's either one or two lines on that surface that are incident with the fourth line, where it goes through the surface.  If I knew enough math to read that, it might be helpful.
+
+This does mean that we don't need to worry about time when finding the rock's trajectory.  We should be able to pick four non-parallel, non-intersecting hailstone paths and find the unique line (or two?) that is incident on them.
+
+
