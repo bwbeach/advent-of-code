@@ -252,4 +252,6 @@ Searching for "3d line that intersects other lines" found this question on the m
 
 This does mean that we don't need to worry about time when finding the rock's trajectory.  We should be able to pick four non-parallel, non-intersecting hailstone paths and find the unique line (or two?) that is incident on them.
 
-
+References:
+ - Wikipedia on [Quadric](https://en.wikipedia.org/wiki/Quadric)
+ - Wolfram on [Point-Line distance](https://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html)
