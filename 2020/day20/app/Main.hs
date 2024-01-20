@@ -1,7 +1,8 @@
 module Main where
 
 import Advent
-  ( only,
+  ( mtsFromList,
+    only,
     run,
   )
 import Data.List (foldl', transpose)
@@ -55,24 +56,29 @@ parseTile s =
     number = read . dropEnd 1 . (!! 1) . words . head . lines $ s
     grid = tail . lines $ s
 
+-- | Find the tiles in the four corners, and multiply their tile numbers.
+--
+-- This looks for all tiles that, in some orientation, could be in the top
+-- left corner.  This is the same set that could be in *any* corner.  Each
+-- such tile has two orientations where it can be in the corner, so we need
+-- to pull out the unique tile numbers.
 part1 :: Problem -> Integer
 part1 tiles =
   product . unique . map tileNumber . filter isCornerTile $ all
   where
+    -- A tile (in its orientation) can be at the top left
     isCornerTile t = isTopTile t && isLeftTile t
+    -- A tile can be on the top row if its top side doesn't match the bottom side of any other tile
     isTopTile t = none (\x -> bottom x == top t && tileNumber t /= tileNumber x) all
+    -- A tile can be on the left side if its left side doesn't match the right side of any other tile
     isLeftTile t = none (\x -> right x == left t && tileNumber t /= tileNumber x) all
+    -- All tiles in all orientations
     all = concatMap allOrientations tiles
+    -- Applying f to every item of a list is False
     none f = not . any f
 
 part2 :: Problem -> Int
 part2 = length
-
-mtsFromList :: (Ord a, Ord b) => [(a, b)] -> M.Map a (S.Set b)
-mtsFromList =
-  foldl' insert M.empty
-  where
-    insert m (a, b) = M.insert a (S.insert b (M.findWithDefault S.empty a m)) m
 
 unique :: (Ord a) => [a] -> [a]
 unique = S.toList . S.fromList
