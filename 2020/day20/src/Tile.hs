@@ -1,16 +1,15 @@
 module Tile
   ( Tile (..),
     allOrientations,
-    bottom,
+    assembleTiles,
+    fitsAbove,
+    fitsLeftOf,
     invert,
-    left,
     parseTile,
-    right,
     rotate,
     tileNumber,
     tileRows,
     trim,
-    top,
   )
 where
 
@@ -103,3 +102,22 @@ bottom (Tile _ ss) = last ss
 -- over, there are four more.
 allOrientations :: Tile -> [Tile]
 allOrientations t = take 4 (iterate rotate t) ++ take 4 (iterate rotate (invert t))
+
+-- | Does tile `a` fit just above tile `b`?
+fitsAbove :: Tile -> Tile -> Bool
+fitsAbove a b = bottom a == top b && tileNumber a /= tileNumber b
+
+-- | Does tile `a` fit on the left side of tile `b`?
+fitsLeftOf :: Tile -> Tile -> Bool
+fitsLeftOf a b = right a == left b && tileNumber a /= tileNumber b
+
+-- | Combine a grid of tiles into one big tile
+--
+-- >>> assembleTiles [[Tile 1 ["abcd", "hijk", "nopq", "uvwx"], Tile 2 ["defg", "klmn", "qrst", "xyz0"]], [Tile 3 ["uvwx", "1234", "890A"], Tile 4 ["xyz0", "4567", "ABCD"]]]
+-- Tile 0 ["abcddefg","hijkklmn","nopqqrst","uvwxxyz0","uvwxxyz0","12344567","890AABCD"]
+assembleTiles :: [[Tile]] -> Tile
+assembleTiles rows =
+  Tile 0 (concatMap assembleRow rows)
+  where
+    -- concatenate the strings across rows of a row a tiles
+    assembleRow = map concat . transpose . map tileRows

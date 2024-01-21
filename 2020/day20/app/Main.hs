@@ -8,20 +8,18 @@ import Advent
     gridToList,
     run,
   )
-import Data.List (transpose)
 import Data.List.Split (splitOn)
 import qualified Data.Set as S
 import Linear.V2 (V2 (..))
 import Tile
   ( Tile (..),
     allOrientations,
-    bottom,
-    left,
+    assembleTiles,
+    fitsAbove,
+    fitsLeftOf,
     parseTile,
-    right,
     tileNumber,
     tileRows,
-    top,
     trim,
   )
 
@@ -41,16 +39,24 @@ parse = map parseTile . splitOn "\n\n"
 -- to pull out the unique tile numbers.
 part1 :: Problem -> Integer
 part1 tiles =
-  product . unique . map tileNumber . filter isCornerTile $ allTiles
+  product . unique . map tileNumber . cornerTiles $ allTiles
+  where
+    -- All tiles in all orientations
+    allTiles = concatMap allOrientations tiles
+
+-- | All of the tilecs/orientations that go in a corner.
+-- This includes two orientations for each tile that goes in a corner,
+-- only one of which will be used once the whole thing is assembled.
+cornerTiles :: [Tile] -> [Tile]
+cornerTiles allTiles =
+  filter isCornerTile allTiles
   where
     -- A tile (in its orientation) can be at the top left
     isCornerTile t = isTopTile t && isLeftTile t
     -- A tile can be on the top row if its top side doesn't match the bottom side of any other tile
-    isTopTile t = none (\x -> bottom x == top t && tileNumber t /= tileNumber x) allTiles
+    isTopTile t = none (`fitsAbove` t) allTiles
     -- A tile can be on the left side if its left side doesn't match the right side of any other tile
-    isLeftTile t = none (\x -> right x == left t && tileNumber t /= tileNumber x) allTiles
-    -- All tiles in all orientations
-    allTiles = concatMap allOrientations tiles
+    isLeftTile t = none (`fitsLeftOf` t) allTiles
     -- Applying f to every item of a list is False
     none f = not . any f
 
@@ -70,49 +76,28 @@ countNonMonsters g =
 -- | Fit all of the input tiles together into one big tile
 buildBigTile :: Problem -> Tile
 buildBigTile tiles =
-  assembleTiles rowsOfTiles
+  assembleTiles . map (map trim) $ rowsOfTiles
   where
     -- The rows of tiles
     rowsOfTiles = map (iterateMaybe nextTileRight) leftEdge
     -- The tiles of the left edge
     leftEdge = iterateMaybe nextTileDown topLeft
     -- What is the next tile below the given one?
-    nextTileDown t = listOfZeroOrOneToMaybe . filter (t `isAbove`) $ allTiles
+    nextTileDown t = listOfZeroOrOneToMaybe . filter (t `fitsAbove`) $ allTiles
     -- What is the next tile to the right of the given one?
-    nextTileRight t = listOfZeroOrOneToMaybe . filter (t `isLeftOf`) $ allTiles
+    nextTileRight t = listOfZeroOrOneToMaybe . filter (t `fitsLeftOf`) $ allTiles
     -- A tile that can be in the top-left corner
-    topLeft = head . filter isCornerTile $ allTiles
-    -- A tile (in its orientation) can be at the top left
-    isCornerTile t = isTopTile t && isLeftTile t
-    -- A tile can be on the top row if its top side doesn't match the bottom side of any other tile
-    isTopTile t = none (`isAbove` t) allTiles
-    -- Is tile a immediately above tile b?
-    isAbove a b = bottom a == top b && tileNumber a /= tileNumber b
-    -- A tile can be on the left side if its left side doesn't match the right side of any other tile
-    isLeftTile t = none (`isLeftOf` t) allTiles
-    -- Is tile a immediately to the left of tile b?
-    isLeftOf a b = right a == left b && tileNumber a /= tileNumber b
+    topLeft = head . cornerTiles $ allTiles
     -- All tiles in all orientations
     allTiles = concatMap allOrientations tiles
-    -- Applying f to every item of a list is False
-    none f = not . any f
 
 -- | Convert a list containing zero or one item into a Maybe
+-- listToMaybe would work.  I like this better because it will complain
+-- if there's more than one item in the list.
 listOfZeroOrOneToMaybe :: (Show a) => [a] -> Maybe a
 listOfZeroOrOneToMaybe [] = Nothing
 listOfZeroOrOneToMaybe [a] = Just a
 listOfZeroOrOneToMaybe x = error ("Expected zero or one: " ++ show x)
-
--- | Combine a grid of tiles into one big tile, after trimming off the outer edges
---
--- >>> assembleTiles [[Tile 1 ["abcd", "hijk", "nopq", "uvwx"], Tile 2 ["defg", "klmn", "qrst", "xyz0"]], [Tile 3 ["uvwx", "1234", "890A"], Tile 4 ["xyz0", "4567", "ABCD"]]]
--- Tile 0 ["hk","HK"]
-assembleTiles :: [[Tile]] -> Tile
-assembleTiles rows =
-  Tile 0 (concatMap assembleRow rows)
-  where
-    -- concatenate the strings across rows of a row a tiles
-    assembleRow = map concat . transpose . map (tileRows . trim)
 
 -- | Like iterate, but stops when the function returns Nothing.
 --
@@ -127,6 +112,10 @@ iterateMaybe f a =
         Just b' -> b' : go b'
         Nothing -> []
 
+-- | All of the unique values in a list
+--
+-- >>> unique [1, 1, 2, 3, 1, 2, 3, 4]
+-- [1,2,3,4]
 unique :: (Ord a) => [a] -> [a]
 unique = S.toList . S.fromList
 
