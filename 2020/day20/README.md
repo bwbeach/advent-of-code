@@ -111,3 +111,26 @@ part1 tiles =
     none f = not . any f
 ```
 
+## Part 2
+
+For this part, we do need to assemble all the tiles.  Let's start in one corner and work out from there.
+
+It's not clear from the problem description whether there will be a unique match for each edge.  If there is, at each step there will only be one tile that could fit, and there will be no need for a search algorithm.  Let's check this by writing a temporary `part2` that will list all tiles that have more than one possible match for the right edge.  It can look at all tile orientations, so there's no need to check the other edges.
+
+```haskell
+part2 :: Problem -> Int
+part2 tiles =
+  length . filter hasMultipleRightMatches $ all
+  where
+    hasMultipleRightMatches t = 1 < length (rightMatches t)
+    -- \| Which tiles match the right side of this one?
+    rightMatches t = filter (\x -> left x == right t && tileNumber t /= tileNumber x) all
+    -- All tiles in all orientations
+    all = concatMap allOrientations tiles
+```
+
+Running this gives `0` for both the test input and the real input.  Yay!
+
+For the real thing, let's pick any of the possible corner tiles for the top left, then build the list of tiles on the left edge by matching bottom-to-top, then build each of the rows left-to-right.  We don't even need to compute the size of the grid up front; each column/row can end when there are no more matches.
+
+
