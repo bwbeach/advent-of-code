@@ -34,4 +34,9 @@ cp -v $gitroot/templates/answers.txt .
 
 # Add dependency on advent library
 echo "Adding dependency on advent"
-sed -i -e '/build-depends/s/$/, advent, split, containers/' $1.cabal
+mv $1.cabal $1.tmp
+cat $1.tmp | \
+    sed -e '/build-depends/s/$/, advent, split, containers/' | \
+    sed -e '/default-language/a\
+    ghc-options:      -Wall' > $1.cabal
+rm $1.tmp
