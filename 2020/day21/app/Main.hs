@@ -2,11 +2,13 @@
 
 module Main where
 
-import Advent (run)
-import Data.List (foldl')
+import Advent (only, run)
+import Data.List (find, foldl', intercalate, sort)
 import Data.List.Split (splitOn)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromJust)
 import qualified Data.Set as S
+import Data.Tuple.Extra (second)
 
 main :: IO ()
 main = run parse part1 part2
@@ -43,19 +45,39 @@ part1 problem =
     -- set of all ingredients that might contain allergens
     maybeAllergen = S.unions . map possibleSet . M.elems $ allergenToPossibles
     -- map from allergen to possible ingredients
-    allergenToPossibles = mtmFromList (concatMap aToP problem)
+    allergenToPossibles = mtmFromList . concatMap aToP $ problem
 
--- for one problem element, (allergen, PossibleIngredients) pairs
+part2 :: Problem -> String
+part2 = intercalate "," . map snd . sort . findAllergens
 
--- | Extract (allergen, PossibileIngredients) pairs
+-- | Finds the mapping from allergen to ingredient
+-- Starts with a mapping allergenToSet (of possible ingredients).  Finds
+-- an allergen with only one possible ingredient, then removes that allergen
+-- and ingredient from the mapping, and repeats until all are done.
+findAllergens :: Problem -> [(String, String)]
+findAllergens problem =
+  go allergenToSet
+  where
+    -- find the mappings among the things that haven't been mapped yet
+    go aToI
+      | M.null aToI = []
+      | otherwise = (a, i) : go (removeAllergen a . removeIngredient i $ aToI)
+      where
+        (a, i) = second (only . S.toList) . fromJust . find ((== 1) . S.size . snd) . M.toList $ aToI
+    -- remove an allergen from the alergen-to-ingredients mapping
+    removeAllergen = M.delete
+    -- remove an ingredient from the alergen-to-ingredients mapping
+    removeIngredient i' = M.map (S.delete i')
+    -- the initial, full mapping to search
+    allergenToSet = M.map possibleSet . mtmFromList . concatMap aToP $ problem
+
+-- | Extract (allergen, PossibileIngredients) pairs from one line the problem statement
 aToP :: ProblemElem -> [(String, PossibleIngredients)]
 aToP (ingredients, allergens) =
   (,possible) <$> allergens
   where
+    -- the PossibleIngredients on the lhs of the line
     possible = OneOf . S.fromList $ ingredients
-
-part2 :: Problem -> Int
-part2 = length
 
 -- | A Monoid that is the set of ingredients that might contain an allergen
 data PossibleIngredients
@@ -76,11 +98,10 @@ possibleSet Anything = error "ingredients could be anything"
 possibleSet (OneOf s) = s
 
 -- | Take a list of pairs and make a map, mappend-ing multiple values for the same key
+-- "mtm" is "map to monoid"
 mtmFromList :: (Ord k, Monoid v) => [(k, v)] -> M.Map k v
 mtmFromList =
   foldl' addOne M.empty
   where
-    addOne m (k, v) =
-      M.insert k (v' <> v) m
-      where
-        v' = M.findWithDefault mempty k m
+    addOne m (k, v) = M.insert k (get k m <> v) m
+    get = M.findWithDefault mempty

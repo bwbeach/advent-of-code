@@ -29,7 +29,7 @@ executable day21
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.16.4.0, advent, split, containers
+    build-depends:    base ^>=4.16.4.0, advent, split, containers, extra
     hs-source-dirs:   app
     default-language: Haskell2010
     ghc-options:      -Wall

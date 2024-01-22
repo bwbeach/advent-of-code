@@ -1,2 +1,2 @@
-test.txt 5 ?
-input.txt ? ?
+test.txt 5 "mxmxvkd,sqjhc,fvjkl"
+input.txt 2798 "gbt,rpj,vdxb,dtb,bqmhk,vqzbq,zqjm,nhjrzzj"
