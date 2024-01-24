@@ -25,7 +25,7 @@ fi
 
 # Initialize the Haskell project with cabal
 cd $1
-cabal init
+cabal init --non-interactive
 
 # Copy in templates
 cp -v $gitroot/templates/cabal.project .
