@@ -29,6 +29,10 @@ makeRing (a : as) =
     go b [] m = M.insert b a m
 makeRing _ = error "bug"
 
+-- | Return the cup to the right of the given one 
+getRight :: Ord a => a -> Ring a -> a 
+getRight a r = next r M.! a
+
 -- | Remove the item to the right of the current one
 -- Returns (itemRemoved, newRing)
 --
@@ -128,4 +132,11 @@ part1 :: Problem -> String
 part1 = concatMap show . orderAfter 1 . (!! 100) . iterate oneRound . makeRing
 
 part2 :: Problem -> Int
-part2 _ = 0
+part2 problem = 
+  a * b
+  where 
+    start = makeRing $ problem ++ [maximum problem + 1 .. 1000000]
+    finish = (!! 10000000) . iterate oneRound $ start
+    a = getRight 1 finish
+    b = getRight a finish
+
