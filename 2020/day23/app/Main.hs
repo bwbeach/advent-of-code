@@ -2,107 +2,130 @@ module Main where
 
 import Advent (run)
 import Data.Char
+import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 
 main :: IO ()
 main = run parse part1 part2
 
--- | A ring of cups
--- The first one in the list is the current cup, followed by the 
--- cups to the right, going around the ring.  The last one in the
--- list is the cup to the left of the current cup.
-newtype Ring = 
-    Ring [Int] 
-    
--- | Show-ing a ring displays the form from the input, like "389125467"
-instance Show Ring where
-    show (Ring items) = concatMap show items 
+-- | A ring of things, with a designated current thing.
+-- Representation is a map from item to the thing to its right.
+data Ring a = Ring
+  { curr :: a,
+    next :: M.Map a a
+  }
+  deriving (Show)
 
--- | Parsing a ring is the inverse of showing it 
+-- | Create a Ring from a list of things
+-- The back of the list wraps back to the front
 --
--- >>> parseRing "12345"
--- 12345
-parseRing :: String -> Ring 
-parseRing s = Ring (map (\c -> read [c]) s)
+-- >>> makeRing [1, 2, 3]
+-- Ring {curr = 1, next = fromList [(1,2),(2,3),(3,1)]}
+makeRing :: (Ord a) => [a] -> Ring a
+makeRing (a : as) =
+  Ring {curr = a, next = go a as M.empty}
+  where
+    go b (c : ds) m = go c ds (M.insert b c m)
+    go b [] m = M.insert b a m
+makeRing _ = error "bug"
 
--- | What is the current cup?
-currentCup :: Ring -> Int 
-currentCup (Ring (a : _)) = a
-currentCup r = error ("Ring is empty: " ++ show r)
+-- | Remove the item to the right of the current one
+-- Returns (itemRemoved, newRing)
+--
+-- >>> removeRight (makeRing [1, 2, 3])
+removeRight :: (Ord a) => Ring a -> (a, Ring a)
+removeRight r@(Ring {curr = a, next = m}) =
+  (b, r {next = m'})
+  where
+    b = m M.! a
+    c = m M.! b
+    m' = M.insert a c . M.delete b $ m
 
--- | Take the three cups to the right of the current cup. 
+-- | Adds an element after element a
+--
+-- >>> addAfter 2 3 (makeRing [1, 2, 4])
+-- Ring {curr = 1, next = fromList [(1,2),(2,3),(3,4),(4,1)]}
+addAfter :: (Ord a) => a -> a -> Ring a -> Ring a
+addAfter a b r@(Ring {next = m}) =
+  r {next = m'}
+  where
+    c = m M.! a
+    m' = M.insert a b . M.insert b c $ m
+
+-- | Take the three cups to the right of the current cup.
 -- Returns: (removedCups, updatedRing)
 --
--- >>> takeThree (parseRing "123456")
--- ([2,3,4],156)
-takeThree :: Ring -> ([Int], Ring)
-takeThree (Ring (a : b : c : d : es)) = ([b, c, d], Ring (a : es))
-takeThree r = error ("Ring does not have enough cups to take three: " ++ show r)
+-- >>> takeThree (makeRing [(1 :: Int) .. 6])
+-- ([2,3,4],Ring {curr = 1, next = fromList [(1,5),(5,6),(6,1)]})
+takeThree :: (Ord a) => Ring a -> ([a], Ring a)
+takeThree r =
+  ([a, b, c], r''')
+  where
+    (a, r') = removeRight r
+    (b, r'') = removeRight r'
+    (c, r''') = removeRight r''
 
--- | Pick the destination cup, given the current cup number, and cups that should be excluded. 
+-- | Pick the destination cup, given the current cup number, and cups that should be excluded.
 --
--- >>> destinationCup 5 [4, 2]
+-- >>> destinationCup (makeRing [5, 6, 2, 3])
 -- 3
 --
--- >>> destinationCup 2 [1, 9]
+-- >>> destinationCup (makeRing [5, 6, 7, 8])
 -- 8
-destinationCup :: Int -> [Int] -> Int 
-destinationCup c exclude = head . filter (not . (`elem` exclude)) $ [(c - 1), (c - 2) .. 1] ++ [9, 8 .. (c + 1)]
+destinationCup :: Ring Int -> Int
+destinationCup (Ring { curr = a, next = m }) =
+  fst $ fromMaybe (M.findMax m) (M.lookupLT a m)
 
--- | Add cups after the given one
---
--- >>> addAfter [2, 4] 5 (parseRing "1357")
--- 135247
-addAfter :: [Int] -> Int -> Ring -> Ring 
-addAfter toAdd dest (Ring cs) =
-    Ring (go cs)
-    where 
-        go [] = error "Destination cup not found"
-        go (x : xs)
-          | x == dest = x : (toAdd ++ xs)
-          | otherwise = x : go xs
-
--- | Update the ring so the current cup is one to the right 
+-- | Update the ring so the current cup is one to the right
 --
 -- >>> moveCurrentRight (parseRing "12345")
 -- 23451
-moveCurrentRight :: Ring -> Ring 
-moveCurrentRight (Ring (x : xs)) = Ring (xs ++ [x])
-moveCurrentRight r = error ("Ring has no current cup: " ++ show r)
+moveCurrentRight :: Ord a => Ring a -> Ring a
+moveCurrentRight r@(Ring {curr = a, next = m}) = r { curr = m M.! a } 
 
 -- | What's the order of the cups after cup 1?
 --
--- >>> orderAfterOne (parseRing "456123")
--- 23456
-orderAfterOne :: Ring -> Ring 
-orderAfterOne (Ring (1 : xs)) = Ring xs 
-orderAfterOne r = orderAfterOne . moveCurrentRight $ r
-
--- | One round of the game 
---
--- >>> oneRound (parseRing "546789132")
--- 891346725
-oneRound :: Ring -> Ring 
-oneRound r =
-    r'''
+-- >>> orderAfter 1 (makeRing [4, 5, 6, 1, 2 ,3])
+-- [2,3,4,5,6]
+orderAfter :: Ord a => a -> Ring a -> [a]
+orderAfter start (Ring {next = m})= 
+    go start 
     where 
-        -- pick up three cups
-        (removed, r') = takeThree r
-        -- select the destination 
-        dest = destinationCup (currentCup r') removed 
-        -- put the removed cups back to the right of the destination
-        r'' = addAfter removed dest r' 
-        -- make the next cup the current one 
-        r''' = moveCurrentRight r''
+        go a = 
+            let b = m M.! a in
+                if b == start 
+                    then [] 
+                    else b : go b
 
+-- | One round of the game
+--
+-- >>> oneRound (parse "546789132")
+-- Ring {curr = 8, next = fromList [(1,3),(2,5),(3,4),(4,6),(5,8),(6,7),(7,2),(8,9),(9,1)]}
+oneRound :: Ring Int -> Ring Int
+oneRound r0 = 
+    r7
+    where
+      -- pick up three cups
+      (a, r1) = removeRight r0 
+      (b, r2) = removeRight r1 
+      (c, r3) = removeRight r2
+      -- select the destination
+      dest = destinationCup r3
+      -- put the removed cups back to the right of the destination
+      r4 = addAfter dest c r3
+      r5 = addAfter dest b r4
+      r6 = addAfter dest a r5
+      -- make the next cup the current one
+      r7 = moveCurrentRight r6
 
 -- | The input file contains a Ring
-type Problem = Ring
+type Problem = [Int]
 
 parse :: String -> Problem
-parse = parseRing . filter isDigit
+parse = map (\c -> read [c]) . filter isDigit
 
 part1 :: Problem -> String
-part1 = show . orderAfterOne . (!! 100) . iterate oneRound
+part1 = concatMap show . orderAfter 1 . (!! 100) . iterate oneRound . makeRing
 
 part2 :: Problem -> Int
 part2 _ = 0
