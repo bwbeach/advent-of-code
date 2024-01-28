@@ -26,6 +26,9 @@ ENV PATH="$HOME/.ghcup/bin:$HOME/.cabal/bin:${PATH}"
 # Switch to the version of GHC that I'm using
 RUN ghcup install ghc 9.2.8 && ghcup set ghc 9.2.8
 
+# VSCode wants this version of hls when it starts up
+RUN ghcup install hls 2.6.0.0
+
 # Install some packages
 RUN cabal install linear lens doctest
 
