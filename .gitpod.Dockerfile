@@ -17,6 +17,9 @@ RUN sudo apt-get -y install \
     libncurses5 \
     libtinfo5
 
+# Install b2 cli
+RUN python3 -m pip install b2
+
 # Install ghcup
 RUN curl https://get-ghcup.haskell.org -sSf | sh
 
