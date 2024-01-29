@@ -17,7 +17,7 @@ RUN sudo apt-get -y install \
     libncurses-dev \
     libncurses5 \
     libtinfo5 \
-    python-pip
+    python3-pip
 
 # Install b2 cli
 RUN python3 -m pip install b2
