@@ -23,3 +23,6 @@ cabal.project.local~
 .ghc.environment.*
 .vscode
 .ipynb_checkpoints/
+
+# don't check in advent of code input data
+input.txt
