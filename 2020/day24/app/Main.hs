@@ -3,7 +3,6 @@ module Main where
 import Advent (Point, run)
 import Data.List (foldl')
 import qualified Data.Set as S
-import Debug.Trace (trace, traceShowId)
 import Linear.V2 (V2 (..))
 
 main :: IO ()
@@ -56,7 +55,7 @@ parseLine =
     go s = error ("bad direction: " ++ s)
 
 part1 :: Problem -> Int
-part1 = length . traceShowId . blackTiles
+part1 = length . blackTiles
 
 blackTiles :: Problem -> [Point]
 blackTiles problem =
@@ -68,9 +67,9 @@ blackTiles problem =
     -- The final location for each input line
     locations = map sum problem
 
-part2 :: Problem -> [Int]
+part2 :: Problem -> Int
 part2 problem =
-  take 8 . map (S.size . traceHex) $ steps
+  S.size . (!! 100) $ steps
   where
     blacks = S.fromList . blackTiles $ problem
 
@@ -78,17 +77,16 @@ part2 problem =
 
     isAlive False 2 = True
     isAlive True 1 = True
+    isAlive True 2 = True
     isAlive _ _ = False
-
-    traceHex ps = trace (showHex ps) ps
 
 -- | Convert a Direction into a two-dimensional vector
 dirToVec :: Direction -> Point
-dirToVec E = V2 1 0
-dirToVec SE = V2 0 1
+dirToVec E = V2 2 0
+dirToVec SE = V2 1 1
 dirToVec SW = V2 (-1) 1
-dirToVec W = V2 (-1) 0
-dirToVec NW = V2 0 (-1)
+dirToVec W = V2 (-2) 0
+dirToVec NW = V2 (-1) (-1)
 dirToVec NE = V2 1 (-1)
 
 -- | All six directions
@@ -130,21 +128,20 @@ life neighbors isAlive =
     unique = S.toList . S.fromList
 
 -- | Convert a set of hexy points to a pretty display
-showHex :: S.Set Point -> String
-showHex hexPoints =
-  unlines . map oneLine $ [(y0 - 1) .. (y1 + 1)]
-  where
-    oneLine y = map (oneChar y) [(x0 - 1) .. (x1 + 1)]
-    oneChar y x
-      | V2 x y `S.member` rectPoints = '*'
-      | x == 0 && y == 0 = 'X'
-      | x == y = '\\'
-      | x == -y = '/'
-      | y == 0 && even x = '-'
-      | even (x + y) = 'o'
-      | otherwise = ' '
-    (V2 x0 y0, V2 x1 y1) = pointBounds . S.toList $ rectPoints
-    rectPoints = S.map toRect hexPoints
+-- showHex :: S.Set Point -> String
+-- showHex points =
+--   unlines . map oneLine $ [(y0 - 1) .. (y1 + 1)]
+--   where
+--     oneLine y = map (oneChar y) [(x0 - 1) .. (x1 + 1)]
+--     oneChar y x
+--       | V2 x y `S.member` points = '*'
+--       | x == 0 && y == 0 = 'X'
+--       | x == y = '\\'
+--       | x == -y = '/'
+--       | y == 0 && even x = '-'
+--       | even (x + y) = 'o'
+--       | otherwise = ' '
+--     (V2 x0 y0, V2 x1 y1) = pointBounds . S.toList $ points
 
 -- | Bounds for a set of points
 --
@@ -156,13 +153,3 @@ pointBounds ps =
   where
     xs = map (\(V2 x _) -> x) ps
     ys = map (\(V2 _ y) -> y) ps
-
--- | Convert a hex point to a rect point
---
--- >>> toRect (V2 1 1)
--- V2 1 1
---
--- >>> toRect (V2 0 1)
--- V2 (-1) 1
-toRect :: Point -> Point
-toRect (V2 q r) = V2 (2 * q + r) r
