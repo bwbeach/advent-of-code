@@ -1,2 +1,2 @@
-test.txt ? ?
-input.txt ? ?
+test.txt 14897079 0
+input.txt 10548634 0
