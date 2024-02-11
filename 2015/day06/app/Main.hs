@@ -53,17 +53,17 @@ parseLine =
         goPoint x = error ("bad point: " ++ show x)
 
 part1 :: Problem -> Int
-part1 problem = numberLit $ applyInstructions problem initial
+part1 problem = totalBrightness $ applyInstructions problem initial
 
 part2 :: Problem -> Int
-part2 = length
+part2 problem = totalBrightness $ applyInstructions2 problem initial
 
-type Column = RangeMap Int Bool
+type Column = RangeMap Int Int
 
 type Grid = RangeMap Int Column
 
 initial :: Grid
-initial = rmSingleton (Range 0 999) (rmSingleton (Range 0 999) False)
+initial = rmSingleton (Range 0 999) (rmSingleton (Range 0 999) 0)
 
 applyInstructions :: Problem -> Grid -> Grid
 applyInstructions problem before =
@@ -84,25 +84,44 @@ applyInstruction (action, Rect (V2 x0 y0) (V2 x1 y1)) =
       TURN_OFF -> turnOff
       TOGGLE -> toggle
 
-turnOn :: Maybe Bool -> Maybe Bool
-turnOn = const (Just True)
+turnOn :: Maybe Int -> Maybe Int
+turnOn = const (Just 1)
 
-turnOff :: Maybe Bool -> Maybe Bool
-turnOff = const (Just False)
+turnOff :: Maybe Int -> Maybe Int
+turnOff = const (Just 0)
 
-toggle :: Maybe Bool -> Maybe Bool
-toggle (Just x) = Just (not x)
+toggle :: Maybe Int -> Maybe Int
+toggle (Just x) = Just (1 - x)
 toggle Nothing = error "did not expect Nothing"
 
-numberLit :: Grid -> Int
-numberLit =
-  sum . map litInColRange . rmToList
+totalBrightness :: Grid -> Int
+totalBrightness =
+  sum . map brightnessInColRange . rmToList
   where
-    litInColRange (Range x0 x1, column) = (x1 - x0 + 1) * litInColumn column
+    brightnessInColRange (Range x0 x1, column) = (x1 - x0 + 1) * brightnessInColumn column
 
-    litInColumn :: Column -> Int
-    litInColumn = sum . map litInRange . rmToList
+    brightnessInColumn = sum . map brightnessInRange . rmToList
 
-    litInRange :: (Range Int, Bool) -> Int
-    litInRange (Range y0 y1, True) = y1 - y0 + 1
-    litInRange _ = 0
+    brightnessInRange (Range y0 y1, setting) = (y1 - y0 + 1) * setting
+
+applyInstructions2 :: Problem -> Grid -> Grid
+applyInstructions2 problem before =
+  foldl' oneStep before problem
+  where
+    oneStep g i = applyInstruction2 i g
+
+applyInstruction2 :: Instruction -> Grid -> Grid
+applyInstruction2 (action, Rect (V2 x0 y0) (V2 x1 y1)) =
+  rmUpdate (Range x0 x1) updateColumn
+  where
+    updateColumn :: Maybe Column -> Maybe Column
+    updateColumn (Just c) = Just (rmUpdate (Range y0 y1) updateCell c)
+    updateColumn Nothing = error "did not expect column to be Nothing"
+
+    updateCell (Just n) = Just (max 0 (n + delta))
+    updateCell Nothing = error "did not expect cell to be Nothing"
+
+    delta = case action of
+      TURN_ON -> 1
+      TURN_OFF -> (-1)
+      TOGGLE -> 2
