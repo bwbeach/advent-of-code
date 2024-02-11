@@ -26,6 +26,7 @@ module RangeMap
     rmRangeEnds,
     rmSingleton,
     rmToList,
+    rmUpdate,
   )
 where
 
