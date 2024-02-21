@@ -31,4 +31,15 @@ decodedLength =
     go (_ : cs) = 1 + go cs
 
 part2 :: Problem -> Int
-part2 = length
+part2 =
+  sum . map lineDiff
+  where
+    lineDiff s = encodedLength s - length s
+
+encodedLength :: String -> Int
+encodedLength s =
+  length s + (length . filter isEncoded $ s) + 2
+  where
+    isEncoded '\\' = True
+    isEncoded '"' = True
+    isEncoded _ = False
