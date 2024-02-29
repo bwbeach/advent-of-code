@@ -4,7 +4,6 @@ import Advent (run)
 import Algorithm.Search (aStar)
 import Data.List (foldl')
 import qualified Data.Map.Strict as M
-import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -91,5 +90,20 @@ part1 problem =
 
     found = (== 1) . M.size . stateProblem
 
+-- | Part 2 -- longest distance
+--
+-- The approach is to invert all distances and then use part1 to
+-- find the shortest distance.
+--
+-- If M is the maximum distance in the graph, the inverse of distance d is (M - d)
 part2 :: Problem -> Int
-part2 = length
+part2 p =
+  uninvertAnswer . part1 . invertProblem $ p
+  where
+    invertProblem = M.map (M.map invertDistance)
+
+    invertDistance = (maxDistance -)
+
+    maxDistance = maximum . concatMap M.elems . M.elems $ p
+
+    uninvertAnswer = ((maxDistance * (M.size p - 1)) -)
