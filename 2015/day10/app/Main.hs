@@ -3,7 +3,6 @@ module Main where
 import Advent (run)
 import Data.Char (isDigit)
 import Data.List (group)
-import Debug.Trace
 
 main :: IO ()
 main = run parse part1 part2
@@ -17,7 +16,7 @@ part1 :: Problem -> Int
 part1 = length . (!! 40) . iterate seeAndSay
 
 part2 :: Problem -> Int
-part2 = length
+part2 = length . (!! 50) . iterate seeAndSay
 
 -- | The part 1 action
 --
