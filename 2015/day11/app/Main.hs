@@ -17,7 +17,7 @@ part1 :: Problem -> String
 part1 = nextPassword
 
 part2 :: Problem -> String
-part2 = id
+part2 = nextPassword . nextPassword
 
 -- | What's the next valid password?
 --
