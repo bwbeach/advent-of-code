@@ -17,12 +17,18 @@ parse :: String -> J.Value
 parse = fromJust . J.decodeStrict . BSU.fromString
 
 part1 :: Problem -> Int
-part1 (J.Number n) = fromJust . S.toBoundedInteger $ n
-part1 (J.Object km) = sum . map part1 . KM.elems $ km
-part1 (J.Array v) = sum . map part1 . V.toList $ v
-part1 (J.String _) = 0
-part1 (J.Bool _) = 0
-part1 J.Null = 0
+part1 = sum . numbers
 
 part2 :: Problem -> Int
 part2 _ = 0
+
+-- | All of the numbers in a JSON structure
+--
+-- Assumes that all numbers can be represented as in Int
+numbers :: J.Value -> [Int]
+numbers (J.Number n) = [fromJust . S.toBoundedInteger $ n]
+numbers (J.Object km) = concatMap numbers . KM.elems $ km
+numbers (J.Array v) = concatMap numbers . V.toList $ v
+numbers (J.String _) = []
+numbers (J.Bool _) = []
+numbers J.Null = []
