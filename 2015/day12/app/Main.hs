@@ -14,6 +14,7 @@ main = run parse part1 part2
 
 type Problem = J.Value
 
+-- | Turn the input file into a JSON AST
 parse :: String -> J.Value
 parse = fromJust . J.decodeStrict . BSU.fromString
 
@@ -23,7 +24,7 @@ part1 = sum . numbers
 part2 :: Problem -> Int
 part2 = sum . numbers . filterJson (not . isRed)
 
--- | Does an object have a value of "red"?
+-- | Is the value an object where one of the values is "red"?
 isRed :: J.Value -> Bool
 isRed (J.Object km) = (red `elem`) . KM.elems $ km
 isRed _ = False
@@ -39,9 +40,7 @@ numbers :: J.Value -> [Int]
 numbers (J.Number n) = [fromJust . S.toBoundedInteger $ n]
 numbers (J.Object km) = concatMap numbers . KM.elems $ km
 numbers (J.Array v) = concatMap numbers . V.toList $ v
-numbers (J.String _) = []
-numbers (J.Bool _) = []
-numbers J.Null = []
+numbers _ = []
 
 -- | Filter an JSON Value, and everything it contains.
 --
