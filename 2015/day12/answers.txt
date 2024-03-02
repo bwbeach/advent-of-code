@@ -1,1 +1,1 @@
-input.txt 119433 ?
+input.txt 119433 68466

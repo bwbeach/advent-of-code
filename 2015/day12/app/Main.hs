@@ -6,6 +6,7 @@ import qualified Data.Aeson.KeyMap as KM
 import qualified Data.ByteString.UTF8 as BSU
 import Data.Maybe (fromJust)
 import qualified Data.Scientific as S
+import qualified Data.Text as T
 import qualified Data.Vector as V
 
 main :: IO ()
@@ -20,7 +21,16 @@ part1 :: Problem -> Int
 part1 = sum . numbers
 
 part2 :: Problem -> Int
-part2 _ = 0
+part2 = sum . numbers . filterJson (not . isRed)
+
+-- | Does an object have a value of "red"?
+isRed :: J.Value -> Bool
+isRed (J.Object km) = (red `elem`) . KM.elems $ km
+isRed _ = False
+
+-- | The JSON value for "red"
+red :: J.Value
+red = J.String . T.pack $ "red"
 
 -- | All of the numbers in a JSON structure
 --
@@ -32,3 +42,17 @@ numbers (J.Array v) = concatMap numbers . V.toList $ v
 numbers (J.String _) = []
 numbers (J.Bool _) = []
 numbers J.Null = []
+
+-- | Filter an JSON Value, and everything it contains.
+--
+-- Any value not passing the test is replaced with Null.
+-- Filtering is recursive for values that do pass the test.
+filterJson :: (J.Value -> Bool) -> J.Value -> J.Value
+filterJson test =
+  go
+  where
+    go v = if test v then process v else J.Null
+
+    process (J.Array v) = J.Array . V.map go $ v
+    process (J.Object km) = J.Object . KM.map go $ km
+    process x = x
