@@ -11,7 +11,7 @@ application {
 dependencies {
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
-    implementation(project(":testLibrary"))
+    implementation(project(":aocLib"))
 }
 
 tasks.test {
