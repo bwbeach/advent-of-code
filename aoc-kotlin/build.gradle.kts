@@ -1,17 +1,28 @@
-// commandLineTool1/build.gradle.kts
+// Base build file for multi-project Gradle build.
+
 plugins {
-    application  // Application plugin to create an executable
-    kotlin("jvm") version "2.0.20"  // Kotlin JVM plugin
+    base  // Base plugin to aggregate tasks
 }
 
-application {
-    mainClass.set("com.example.MainKt")  // Main class for command-line tool (note the "Kt" suffix)
+// This that apply to all sub-projects
+subprojects {
+//    apply(plugin = "org.jetbrains.kotlin.jvm")  // Applies Kotlin plugin to all subprojects
+
+    repositories {
+        mavenCentral()
+    }
+
+//    dependencies {
+//        // Common test dependencies for all subprojects
+//        testImplementation(kotlin("test"))
+//    }
+
+//    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+//        compilerOptions {
+//            jvmTarget.set(JvmTarget.JVM_21)
+//            languageVersion.set(KotlinVersion.KOTLIN_2_2)
+//            apiVersion.set(KotlinVersion.KOTLIN_2_2)
+//        }
+//    }
 }
 
-dependencies {
-    implementation(project(":testLibrary"))
-}
-
-repositories {
-    mavenCentral()
-}

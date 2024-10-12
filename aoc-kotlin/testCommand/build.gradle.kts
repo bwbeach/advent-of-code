@@ -14,10 +14,6 @@ dependencies {
     implementation(project(":testLibrary"))
 }
 
-repositories {
-    mavenCentral()
-}
-
 tasks.test {
     useJUnitPlatform()
 }
