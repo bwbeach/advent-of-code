@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
@@ -7,9 +8,10 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/aocLib" />
             <option value="$PROJECT_DIR$/blank" />
+            <option value="$PROJECT_DIR$/newDay" />
             <option value="$PROJECT_DIR$/testCommand" />
-            <option value="$PROJECT_DIR$/testLibrary" />
             <option value="$PROJECT_DIR$/y2017d01" />
           </set>
         </option>

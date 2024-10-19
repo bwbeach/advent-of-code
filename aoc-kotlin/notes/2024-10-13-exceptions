@@ -1,0 +1,71 @@
+# Exception handling in Kotlin vs Java
+
+The task I started working on this morning was creating a "script", actually a Kotlin 
+program, to add a new sub-project for a new day's problem.
+
+I made a new sub-project by hand called `newDay`.  I wrote a doc comment on the main 
+function saying what it does, and let the AI Assistent write the code. After tweaking 
+to print a decent usage message, and to return non-zero status on error, I had this:
+
+```kotlin
+/**
+ * Creates a sub-project for a new problem.
+ *
+ * Command-line argument is the name of the new subproject.
+ *
+ * Adds the subproject to the file `settings.gradle.kts`
+ * in the current directory by adding an `include` line.
+ *
+ * Copies the sub-project directory `blank` to a new directory
+ * named for the new sub-project.
+ */
+fun main(args: Array<String>) {
+
+    // Check command-line arguments
+    if (args.size != 1) {
+        println("Usage: newDay <newProjectName>")
+        System.exit(1)
+    }
+
+    // Get the names of files we're dealing with
+    val newProjectName = args[0]
+    val settingsFile = File("settings.gradle.kts")
+    val blankProjectDir = File("blank")
+    val newProjectDir = File(newProjectName)
+
+    // Check if the new project directory already exists
+    if (newProjectDir.exists()) {
+        println("The directory for the new sub-project already exists.")
+        System.exit(1)
+    }
+
+    // Add the include line to the settings.gradle.kts file
+    settingsFile.appendText("\ninclude(\"$newProjectName\")")
+
+    // Copy the blank project directory to the new project directory
+    try {
+        blankProjectDir.copyRecursively(newProjectDir)
+        println("New sub-project '$newProjectName' created successfully.")
+    } catch (e: IOException) {
+        println("An error occurred while creating the new sub-project: ${e.message}")
+        System.exit(1)
+    }
+
+    // Success
+    System.exit(0)
+}
+```
+
+I like that it checked for existence of the target directory before clobbering it.  Nice touch.
+
+If this were Java, I would expect `settingsFile.appendText` to throw an IOException if
+something goes wrong.  What's with that?
+
+... time out to go read the chapter called ["Throwing to Returning"](https://learning.oreilly.com/library/view/java-to-kotlin/9781492082262/ch19.html) in the book Java to Kotlin, by McGregor and Price. ...
+
+(Side note: the book seems good.)
+
+This is annoying.
+There doesn't seem to be a good approach to calling Java methods that throw from Kotlin.
+The book recommends converting the Java functions to return a Result and not throw any more.
+That doesn't work for library methods, including methods in the Kotlin library like `appendText`.

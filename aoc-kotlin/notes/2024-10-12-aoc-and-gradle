@@ -1,0 +1,20 @@
+# Setting up a multi-project build in Gradle
+
+This topic is several layers deep in setting up my first Kotlin project, a project to
+solve [Advent of Code](https://adventofcode.com) for 2017 using Kotlin.  My approach
+is to just start writing code using Jetbrains' new AI assistent and see how it goes.
+
+The first step is to set up a Gradle project.  I want to build some libraries to support
+common functionaly for AoC problems, and then have a separate thing for each day's problem.
+Some folks at work mentioned "multi-project builds" in Gradle last week; this is a good
+opportunity to learn about them.
+
+I asked ChatGPT to write a template for a multi-project build with one library and one app.
+It did a decent job.
+
+The main thing I had to change was version numbers.  It picked really old versions of the 
+jvm, kotlin, and gradle.  I went to the web sites for those projects to find the latest
+supported release and went with those.
+
+Things to learn about in the future:
+ - How to factor out things like compiler options into the root project.
