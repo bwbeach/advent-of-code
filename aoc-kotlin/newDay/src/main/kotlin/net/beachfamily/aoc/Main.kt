@@ -1,6 +1,7 @@
 package net.beachfamily.aoc
 
 import java.io.File
+import java.io.IOException
 import kotlin.system.exitProcess
 
 /**
@@ -39,13 +40,13 @@ fun main(args: Array<String>) {
     addIncludeLineToProject(settingsFile, newProjectName)
 
     // Copy the blank project directory to the new project directory
-//    try {
-//        blankProjectDir.copyRecursively(newProjectDir)
-//        println("New sub-project '$newProjectName' created successfully.")
-//    } catch (e: IOException) {
-//        println("An error occurred while creating the new sub-project: ${e.message}")
-//        System.exit(1)
-//    }
+    try {
+        blankProjectDir.copyRecursively(newProjectDir)
+        println("New sub-project '$newProjectName' created successfully.")
+    } catch (e: IOException) {
+        println("An error occurred while creating the new sub-project: ${e.message}")
+        System.exit(1)
+    }
 
     // Success
     exitProcess(0)
