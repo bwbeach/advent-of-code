@@ -8,6 +8,7 @@ application {
 }
 
 dependencies {
+    implementation("com.google.jimfs:jimfs:1.3.0")
     implementation(kotlin("stdlib"))
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")

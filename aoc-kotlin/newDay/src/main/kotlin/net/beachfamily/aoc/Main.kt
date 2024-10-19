@@ -2,6 +2,9 @@ package net.beachfamily.aoc
 
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import kotlin.system.exitProcess
 
 /**
@@ -26,7 +29,7 @@ fun main(args: Array<String>) {
 
     // Get the names of files we're dealing with
     val newProjectName = args[0]
-    val settingsFile = File("settings.gradle.kts")
+    val settingsFile = File("settings.gradle.kts").toPath()
     val blankProjectDir = File("blank")
     val newProjectDir = File(newProjectName)
 
@@ -56,9 +59,9 @@ fun main(args: Array<String>) {
  * Adds a new include line to the gradle settings file `settingsFile`, maintaining
  * all include lines at the end of the settings, and in alphabetical order.
  */
-private fun addIncludeLineToProject(settingsFile: File, newProjectName: String) {
+fun addIncludeLineToProject(settingsFile: Path, newProjectName: String) {
     // Read the original contents of the file
-    val originalLines = settingsFile.readLines()
+    val originalLines = Files.readAllLines(settingsFile)
 
     // Separate the include lines from the other lines
     val (includeLines, nonIncludeLines) = originalLines.partition { it.startsWith("include(\"") }
@@ -77,6 +80,10 @@ private fun addIncludeLineToProject(settingsFile: File, newProjectName: String) 
     }
 
     // Write back to the settings file
-    settingsFile.writeText(newContents.joinToString(separator= "\n", postfix= "\n"))
+    Files.write(
+        settingsFile,
+        newContents.joinToString(separator= "\n", postfix= "\n").toByteArray(),
+        StandardOpenOption.TRUNCATE_EXISTING
+    )
 }
 
