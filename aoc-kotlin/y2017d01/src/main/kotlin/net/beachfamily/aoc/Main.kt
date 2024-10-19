@@ -1,7 +1,5 @@
 package net.beachfamily.aoc
 
-import net.beachfamily.aoc.readInput
-
 fun main() {
     val input = readInput("y2017d01").trim()
     println(part1(input))
@@ -27,4 +25,3 @@ private fun doWork(s: String, otherIndex: (Int) -> Int): Int {
     // Add them up
     return filtered.sumOf { it.digitToInt() }
 }
-

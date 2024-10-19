@@ -5,6 +5,6 @@ import java.nio.file.Paths
 
 fun readInput(name: String) : String {
     val dir = Paths.get("/Users/brianb/sandbox/advent-of-code/problems")  // TODO: use env var
-    var path = dir.resolve(name)
+    val path = dir.resolve(name)
     return Files.readAllBytes(path).decodeToString()
 }
