@@ -1,10 +1,10 @@
 package net.beachfamily.aoc
 
 import java.io.File
-import java.io.IOException
+import kotlin.system.exitProcess
 
 /**
- * Creates a sub-project for a new problem.
+ * Creates a subproject for a new problem.
  *
  * Command-line argument is the name of the new subproject.
  *
@@ -20,23 +20,23 @@ fun main(args: Array<String>) {
     if (args.size != 1) {
         println("args.size: ${args.size}")
         println("Usage: newDay <newProjectName>")
-        System.exit(1)
+        exitProcess(1)
     }
 
     // Get the names of files we're dealing with
     val newProjectName = args[0]
-    val settingsFile = File("xxx.settings.gradle.kts")
+    val settingsFile = File("settings.gradle.kts")
     val blankProjectDir = File("blank")
     val newProjectDir = File(newProjectName)
 
     // Check if the new project directory already exists
     if (newProjectDir.exists()) {
         println("The directory for the new sub-project already exists.")
-        System.exit(1)
+        exitProcess(1)
     }
 
     // Add the include line to the settings.gradle.kts file
-    settingsFile.appendText("\ninclude(\"$newProjectName\")")
+    addIncludeLineToProject(settingsFile, newProjectName)
 
     // Copy the blank project directory to the new project directory
 //    try {
@@ -48,6 +48,34 @@ fun main(args: Array<String>) {
 //    }
 
     // Success
-    System.exit(0)
+    exitProcess(0)
+}
+
+/**
+ * Adds a new include line to the gradle settings file `settingsFile`, maintaining
+ * all include lines at the end of the settings, and in alphabetical order.
+ */
+private fun addIncludeLineToProject(settingsFile: File, newProjectName: String) {
+    // Read the original contents of the file
+    val originalLines = settingsFile.readLines()
+
+    // Separate the include lines from the other lines
+    val (includeLines, nonIncludeLines) = originalLines.partition { it.startsWith("include(\"") }
+
+    // Add the new include line and sort the include lines
+    val updatedIncludeLines = buildList {
+        addAll(includeLines)
+        add("include(\"$newProjectName\")")
+        sort()
+    }
+
+    // Make the new file contents
+    val newContents = buildList {
+        addAll(nonIncludeLines)
+        addAll(updatedIncludeLines)
+    }
+
+    // Write back to the settings file
+    settingsFile.writeText(newContents.joinToString(separator= "\n", postfix= "\n"))
 }
 
