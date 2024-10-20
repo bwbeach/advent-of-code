@@ -7,7 +7,10 @@ class MainTest {
 
     @Test
     fun `examples from part1 problem statement`() {
-        assertEquals(4, part1("1122"))
+        val input = "1\t9 5\n" +
+                "7 5 3\n" +
+                "2 4 6 8\n"
+        assertEquals(18, part1(input))
     }
 
     @Test

@@ -9,6 +9,7 @@ application {
 
 dependencies {
     implementation(kotlin("stdlib"))
+    implementation(project(":aocLib"))
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
 }
