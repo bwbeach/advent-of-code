@@ -14,7 +14,6 @@ class AocKtTest {
             Pair(2, 3)
         )
 
-        val result = allPairs(input).toList()
-        assertEquals(expected, result)
+        assertEquals(expected, allPairs(input).toList())
     }
 }
