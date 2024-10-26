@@ -20,6 +20,20 @@ fun part1sum(s: String): Int {
 }
 
 fun part2(s: String) : Int {
-    return s.length
+    return s
+        .split('\n')
+        .filter { it.isNotBlank() }
+        .map(::part2Line)
+        .sum()
 }
 
+/**
+ * Finds the two numbers where one evenly divides the other and returns their quotient.
+ * Input is a whitespace-separated string of decimal numbers.
+ */
+fun part2Line(s: String) : Int {
+    val numbers = s.split(Regex("\\s+")).filter { it.isNotBlank() }.map { it.toInt() }
+    val pairs = allPairsBothOrders(numbers)
+    val divisiblePair = singleItem( pairs.filter { (a, b) -> a % b == 0 } )
+    return divisiblePair.first / divisiblePair.second
+}

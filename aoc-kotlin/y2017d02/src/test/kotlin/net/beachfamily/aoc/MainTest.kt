@@ -15,6 +15,9 @@ class MainTest {
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
+        assertEquals(4, part2Line("5 9 2 8"))
+        assertEquals(3, part2Line("9 4 7 3"))
+        assertEquals(2, part2Line("3 8 6 5"))
     }
+
 }
