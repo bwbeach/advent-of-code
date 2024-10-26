@@ -44,3 +44,22 @@ fun <T> singleItem(sequence: Sequence<T>): T {
     if (iterator.hasNext()) throw IllegalArgumentException("Sequence contains more than one item")
     return singleItem
 }
+
+/**
+ * Splits the input string at newlines and returns a list of all non-blank lines.
+ *
+ * @param s Input string to be processed.
+ * @return A list of non-blank lines from the input string.
+ */
+fun lines(s: String) : List<String> =
+    s.split('\n').filter { it.isNotBlank() }
+
+/**
+ * Splits the input string into words, where words are defined as sequences of non-whitespace
+ * characters separated by sequences of whitespace characters. Only non-blank words are retained.
+ *
+ * @param s Input string to be processed.
+ * @return A list of non-blank words from the input string.
+ */
+fun words(s: String) : List<String> =
+    s.split(Regex("\\s+")).filter { it.isNotBlank() }
