@@ -48,7 +48,7 @@ fun <T> singleItem(sequence: Sequence<T>): T {
 /**
  * Splits the input string at newlines and returns a list of all non-blank lines.
  *
- * @param s Input string to be processed.
+ * @param s Input string
  * @return A list of non-blank lines from the input string.
  */
 fun lines(s: String) : List<String> =
@@ -57,6 +57,7 @@ fun lines(s: String) : List<String> =
 /**
  * Splits the input string into words, where words are defined as sequences of non-whitespace
  * characters separated by sequences of whitespace characters. Only non-blank words are retained.
+ * Words include any non-whitespace characters, including punctuation.
  *
  * @param s Input string to be processed.
  * @return A list of non-blank words from the input string.
