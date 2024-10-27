@@ -1,8 +1,7 @@
 package net.beachfamily.aoc
 
-private const val input = "the input"
-
 fun main() {
+    val input = readInput("y2017d01")
     println(part1(input))
     println(part2(input))
 }
