@@ -5,7 +5,6 @@ import kotlin.math.abs
 fun main() {
     val input = readInput("y2017d03")
     val address = singleItem(words(input).asSequence()).toInt()
-    val letters = listOf('a', 'b', 'c')
     
     println(part1(address))
     println(part2(input))
@@ -76,18 +75,6 @@ fun y(a: Int, first: Int, edge: Int) : Int {
         4 -> -r
         else -> throw IllegalArgumentException("Invalid address $a when first=$first and edge=$edge")
     }
-}
-
-
-
-/**
- * Returns the first number in the outer square, and the size of its edges.
- */
-fun firstAndSize(a: Int) : Pair<Int, Int> {
-    assert(1 < a)
-    val inner = sizeOfInner(a)
-    val first = inner * inner + 1
-    return Pair(first, inner + 2)
 }
 
 /**
