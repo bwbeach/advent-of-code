@@ -7,7 +7,7 @@ fun main() {
     val address = singleItem(words(input).asSequence()).toInt()
     
     println(part1(address))
-    println(part2(input))
+    println(part2(address))
 }
 
 fun part1(a: Int) : Int {
@@ -15,8 +15,39 @@ fun part1(a: Int) : Int {
     return abs(x) + abs(y)
 }
 
-fun part2(s: String) : Int {
-    return s.length
+fun part2(a: Int) : Int {
+    val grid : MutableMap<Pair<Int, Int>, Int> = HashMap()
+    val origin = Pair(0, 0)
+    grid[origin] = 1
+
+    val addresses = generateSequence(2) { it + 1 }
+    for (n in addresses) {
+        val p = xAndY(n)
+        val value = neighbors(p).mapNotNull { grid[it] }.sum()
+        grid[p] = value
+        if (a < value) {
+            return value
+        }
+    }
+
+    throw RuntimeException("Infinite sequence ended")
+}
+
+/**
+ * Returns all the neighbors of the given point, including diagonals.
+ */
+fun neighbors(p: Pair<Int, Int>) : Sequence<Pair<Int, Int>> {
+    val (x, y) = p
+    return sequenceOf(
+        Pair(x - 1, y - 1),
+        Pair(x - 1, y),
+        Pair(x - 1, y + 1),
+        Pair(x, y - 1),
+        Pair(x, y + 1),
+        Pair(x + 1, y - 1),
+        Pair(x + 1, y),
+        Pair(x + 1, y + 1),
+    )
 }
 
 /**
