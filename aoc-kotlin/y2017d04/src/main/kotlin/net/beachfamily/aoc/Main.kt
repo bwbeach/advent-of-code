@@ -11,12 +11,22 @@ fun part1(s: String) : Int {
 }
 
 fun part2(s: String) : Int {
-    return s.length
+    return lines(s).filter { valid2(it) }.size
 }
 
 fun valid(s: String) : Boolean {
     val original = words(s)
     val withoutDups = original.toSet()
     return original.size == withoutDups.size
+}
+
+fun valid2(s: String) : Boolean {
+    val original = words(s).map { sortedString(it) }
+    val withoutDups = original.toSet()
+    return original.size == withoutDups.size
+}
+
+fun sortedString(s: String) : String {
+    return s.toList().sorted().joinToString("")
 }
 

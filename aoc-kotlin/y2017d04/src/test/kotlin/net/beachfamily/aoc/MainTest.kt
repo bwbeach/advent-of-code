@@ -8,18 +8,16 @@ import kotlin.test.assertTrue
 class MainTest {
 
     @Test
-    fun `examples from part1 problem statement`() {
-        assertEquals(4, part1("1122"))
-    }
-
-    @Test
-    fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
-    }
-
     fun `test part1 valid check`() {
         assertTrue { valid("aa bb cc dd ee") }
         assertFalse { valid("aa bb cc dd aa") }
         assertTrue { valid("aa bb cc dd aaa") }
+    }
+
+    @Test
+    fun `test part2 valid check`() {
+        assertTrue { valid2("abcde fghij") }
+        assertFalse { valid2("abcde xyz ecdab") }
+        assertTrue { valid2("a ab abc abd abf abj") }
     }
 }
