@@ -13,7 +13,7 @@ class MainTest {
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
+        assertEquals(4, part2(listOf(0, 2, 7, 0)))
     }
 
     @Test
