@@ -26,6 +26,10 @@ class MainTest {
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
+        val p = Program(mutableListOf(0, 3, 0, 1, -3), 0)
+        while (!p.isDone()) {
+            p.step2()
+        }
+        assertEquals(Program(mutableListOf(2, 3, 2, 3, -1), 5, 10), p)
     }
 }
