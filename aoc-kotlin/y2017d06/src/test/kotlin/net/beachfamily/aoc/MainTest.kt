@@ -22,9 +22,15 @@ class MainTest {
         assertEquals(0, indexOfBiggest(sequenceOf(3, 1, 2, 3)))
     }
 
+    @Test
     fun `test indexOfFirstRepeated`() {
         assertNull(indexOfFirstRepeated(sequenceOf(0, 2, 7)))
         assertEquals(3, indexOfFirstRepeated(sequenceOf(3, 1, 2, 3)))
+    }
+    
+    @Test 
+    fun `test firstCycle`() {
+        assertEquals(2 to 5, firstCycle(sequenceOf(0, 1, 2, 3, 4, 2, 3, 4)))
     }
 
     @Test
