@@ -14,4 +14,17 @@ class MainTest {
     fun `examples from part2 problem statement`() {
         assertEquals(4, part2("1212"))
     }
+
+
+    @Test
+    fun `test parseLine with sample input`() {
+        assertEquals(
+            Node("ktlj", 57, listOf()),
+            parseLine("ktlj (57)")
+        )
+        assertEquals(
+            Node("ugml", 68, listOf("gyxo", "ebii", "jptl")),
+            parseLine("ugml (68) -> gyxo, ebii, jptl")
+        )
+    }
 }
