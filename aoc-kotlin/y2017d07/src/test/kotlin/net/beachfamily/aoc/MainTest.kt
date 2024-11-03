@@ -25,13 +25,14 @@ class MainTest {
 
     val example: List<RawNode> = lines(exampleText).map { parseLine(it) }
 
+    @Test
     fun `test part1 on example`() {
         assertEquals("tknk", part1(example))
     }
 
     @Test
     fun `examples from part2 problem statement`() {
-        // assertEquals(4, part2("1212"))
+        assertEquals(60, part2(example))
     }
 
 
