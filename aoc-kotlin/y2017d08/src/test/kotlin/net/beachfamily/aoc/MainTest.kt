@@ -13,14 +13,15 @@ class MainTest {
         c inc -20 if c == 10
         """.trimIndent()
 
+    val program = lines(example).map { Instruction.parse(it) }
+
     @Test
     fun `examples from part1 problem statement`() {
-        val program = lines(example).map { Instruction.parse(it) }
         assertEquals(1, part1(program))
     }
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
+        assertEquals(10, part2(program))
     }
 }

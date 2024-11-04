@@ -106,6 +106,6 @@ fun part1(program: List<Instruction>) : Int {
 
 fun part2(program: List<Instruction>) : Int {
     val memory = mutableMapOf<String, Int>()
-    return program.map { it.execute(memory); memory.values.max() }.max()
+    return program.map { it.execute(memory); memory.values.maxOrNull() ?: 0 }.max()
 }
 
