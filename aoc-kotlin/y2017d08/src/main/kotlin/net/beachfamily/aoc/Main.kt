@@ -10,7 +10,7 @@ enum class ComparisonOperator(val symbol: String) {
 
     companion object {
         fun fromString(symbol: String): ComparisonOperator? =
-            values().find { it.symbol == symbol }
+            entries.find { it.symbol == symbol }
     }
 
     override fun toString(): String = symbol
