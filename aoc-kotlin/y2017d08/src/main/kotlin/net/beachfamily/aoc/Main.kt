@@ -81,28 +81,31 @@ data class Instruction (
                 IntExpr.Register(text)
             }
     }
+
+    fun execute(memory: MutableMap<String, Int>) {
+        if (test.eval(memory)) {
+            val prevValue = memory[register] ?: 0
+            val offset = direction.multiplier * value
+            memory[register] = prevValue + offset
+        }
+    }
 }
 
 fun main() {
     val input = readInput("y2017d08")
     val program = lines(input).map { Instruction.parse(it) }
     println(part1(program))
-    println(part2(input))
+    println(part2(program))
 }
 
 fun part1(program: List<Instruction>) : Int {
     val memory = mutableMapOf<String, Int>()
-    program.forEach {
-        if (it.test.eval(memory)) {
-            val prevValue = memory[it.register] ?: 0
-            val offset = it.direction.multiplier * it.value
-            memory[it.register] = prevValue + offset
-        }
-    }
+    program.forEach { it.execute(memory) }
     return memory.values.max()
 }
 
-fun part2(s: String) : Int {
-    return s.length
+fun part2(program: List<Instruction>) : Int {
+    val memory = mutableMapOf<String, Int>()
+    return program.map { it.execute(memory); memory.values.max() }.max()
 }
 
