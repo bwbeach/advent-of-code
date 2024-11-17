@@ -62,11 +62,19 @@ fun score(item: Item, depth: Int = 1): Int {
     }
 }
 
+fun score2(item: Item): Int {
+    when (item) {
+        is Item.Garbage -> return item.text.length
+        is Item.Group -> return item.items.map { score2(it) }.sum()
+    }
+}
+
 fun main() {
     val input = readInput("y2017d09").trim()
     println(part1(input))
     println(part1b(input))
     println(part2(input))
+    println(part2b(input))
 }
 
 fun part1(s: String) : Int {
@@ -77,7 +85,10 @@ fun part1(s: String) : Int {
 }
 
 fun part2(s: String) : Int {
-    return s.length
+    val iter = s.iterator()
+    require(iter.next() == '{')
+    val item = parseGroup(iter)
+    return score2(item)
 }
 
 enum class State {
@@ -89,35 +100,36 @@ enum class State {
 data class FullState(
     val state: State,
     val depth: Int,
-    val score: Int
+    val score: Int,
+    val score2: Int,
 ) {
     fun next(c: Char): FullState {
         return when (state) {
             State.GROUP ->
                 when (c) {
-                    '{' -> FullState(State.GROUP, depth + 1, score + depth + 1)
+                    '{' -> FullState(State.GROUP, depth + 1, score + depth + 1, score2)
                     '}' -> {
                         require(0 < depth)
-                        FullState(State.GROUP, depth - 1, score)
+                        FullState(State.GROUP, depth - 1, score, score2)
                     }
                     ',' -> this
-                    '<' -> FullState(State.GARBAGE, depth, score)
+                    '<' -> FullState(State.GARBAGE, depth, score, score2)
                     else -> throw IllegalArgumentException("Invalid char '$c' in state $this")
                 }
             State.GARBAGE -> {
                 when (c) {
-                    '!' -> FullState(State.DELETE, depth, score)
-                    '>' -> FullState(State.GROUP, depth, score)
-                    else -> this
+                    '!' -> FullState(State.DELETE, depth, score, score2)
+                    '>' -> FullState(State.GROUP, depth, score, score2)
+                    else -> FullState(State.GARBAGE, depth, score, score2 + 1)
                 }
             }
             State.DELETE ->
-                FullState(State.GARBAGE, depth, score)
+                FullState(State.GARBAGE, depth, score, score2)
         }
     }
 }
 
-fun initialState(): FullState = FullState(State.GROUP, 0, 0)
+fun initialState(): FullState = FullState(State.GROUP, 0, 0, 0)
 
 fun part1b(s: String): Int {
     var state = initialState()
@@ -125,4 +137,12 @@ fun part1b(s: String): Int {
         state = state.next(c)
     }
     return state.score
+}
+
+fun part2b(s: String): Int {
+    var state = initialState()
+    for (c in s) {
+        state = state.next(c)
+    }
+    return state.score2
 }
