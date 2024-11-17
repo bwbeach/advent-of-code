@@ -40,9 +40,6 @@ fun parseGroup(input: Iterator<Char>): Item {
         if (t == '}') {
             return Item.Group(items)
         } else {
-            if (t != ',') {
-                println("AHA!")
-            }
             require(t == ',')
         }
     }
@@ -107,24 +104,24 @@ data class FullState(
         return when (state) {
             State.GROUP ->
                 when (c) {
-                    '{' -> FullState(State.GROUP, depth + 1, score + depth + 1, score2)
+                    '{' -> copy(state = State.GROUP, depth = depth + 1, score = score + depth + 1)
                     '}' -> {
                         require(0 < depth)
-                        FullState(State.GROUP, depth - 1, score, score2)
+                        copy(depth = depth - 1)
                     }
                     ',' -> this
-                    '<' -> FullState(State.GARBAGE, depth, score, score2)
+                    '<' -> copy(state = State.GARBAGE)
                     else -> throw IllegalArgumentException("Invalid char '$c' in state $this")
                 }
             State.GARBAGE -> {
                 when (c) {
-                    '!' -> FullState(State.DELETE, depth, score, score2)
-                    '>' -> FullState(State.GROUP, depth, score, score2)
-                    else -> FullState(State.GARBAGE, depth, score, score2 + 1)
+                    '!' -> copy(state = State.DELETE)
+                    '>' -> copy(state = State.GROUP)
+                    else -> copy(score2 = score2 + 1)
                 }
             }
             State.DELETE ->
-                FullState(State.GARBAGE, depth, score, score2)
+                copy(state = State.GARBAGE)
         }
     }
 }
