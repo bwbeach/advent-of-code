@@ -129,17 +129,13 @@ data class FullState(
 fun initialState(): FullState = FullState(State.GROUP, 0, 0, 0)
 
 fun part1b(s: String): Int {
-    var state = initialState()
-    for (c in s) {
-        state = state.next(c)
-    }
-    return state.score
+    return finalState(s).score
+}
+
+private fun finalState(s: String): FullState {
+    return s.fold(initialState()) { state, c -> state.next(c) }
 }
 
 fun part2b(s: String): Int {
-    var state = initialState()
-    for (c in s) {
-        state = state.next(c)
-    }
-    return state.score2
+    return finalState(s).score2
 }
