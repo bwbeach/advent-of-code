@@ -19,18 +19,6 @@ data class CircularList<T>(
     val current : Int,
 ){
     /**
-     * Override hashing to match equals().
-     *
-     * Values are combined using the standard combiner, starting at current and
-     * going forward around the list.
-     */
-    override fun hashCode(): Int {
-        return (0 ..< items.size).fold(0) { hash, index ->
-            31 * hash + get(index).hashCode()
-        }
-    }
-    
-    /**
      * Get the element at the "index" relative to current position.
      */
     operator fun get(index: Int): T {
