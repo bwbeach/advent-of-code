@@ -9,7 +9,8 @@ data class State(
     }
 }
 
-fun initialState() = State(CircularList((0 ..< 256).toList(), 0), 0)
+fun initialState(size: Int) =
+    State(CircularList((0 ..< size).toList(), 0), 0)
 
 fun oneStep(s0: State, len: Int): State {
     val items0 = s0.items
@@ -21,13 +22,13 @@ fun oneStep(s0: State, len: Int): State {
 fun main() {
     val input = readInput("y2017d10")
     val lengths = words(input.replace(',', ' ')).map { it.toInt() }
-    println(part1(lengths))
+    println(part1(256, lengths))
     println(part2(input))
 }
 
-fun part1(lengths: List<Int>) : Int {
-    val finalState = lengths.fold(initialState()) { s, len -> oneStep(s, len) }
-    return finalState.items[0] * finalState.items[1]
+fun part1(size: Int, lengths: List<Int>) : Int {
+    val finalState = lengths.fold(initialState(size)) { s, len -> oneStep(s, len) }
+    return finalState.items.items[0] * finalState.items.items[1]
 }
 
 fun part2(s: String) : Int {

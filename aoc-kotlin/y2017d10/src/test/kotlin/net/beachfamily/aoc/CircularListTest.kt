@@ -8,7 +8,7 @@ class CircularListTest {
 
     @Test
     fun testEquals() {
-        assertEquals(
+        assertNotEquals(
             CircularList(listOf(1, 2, 3, 4, 5), 2),
             CircularList(listOf(3, 4, 5, 1, 2), 0)
         )
@@ -34,20 +34,20 @@ class CircularListTest {
     @Test
     fun advance() {
         val before = CircularList(listOf(1, 2, 3, 4, 5), 2)
-        val after = CircularList(listOf(2, 3, 4, 5, 1), 0)
+        val after = CircularList(listOf(1, 2, 3, 4, 5), 1)
         assertEquals(after, before.advance(4))
     }
 
     @Test
     fun reverseN() {
         val before = CircularList(listOf(1, 2, 3, 4, 5), 2)
-        val after = CircularList(listOf(1, 5, 4, 3, 2), 0)
+        val after = CircularList(listOf(3, 2, 1, 5, 4), 2)
         assertEquals(after, before.reverseN(4))
     }
 
     @Test
     fun testToString() {
         val list = CircularList(listOf(1, 2, 3, 4, 5), 2)
-        assertEquals("[3] 4 5 1 2", list.toString())
+        assertEquals("1 2 [3] 4 5", list.toString())
     }
 }

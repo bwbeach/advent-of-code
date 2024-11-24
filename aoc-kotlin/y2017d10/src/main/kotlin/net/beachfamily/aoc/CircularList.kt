@@ -18,21 +18,6 @@ data class CircularList<T>(
      */
     val current : Int,
 ){
-
-    /**
-     * Two lists are equal if items at the same indices are equal, even though
-     * the representation in `items` may be shifted.
-     */
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is CircularList<*>) return false
-        if (items.size != other.items.size) return false
-
-        return (0 ..< items.size).all {
-            this[it] == other[it]
-        }
-    }
-
     /**
      * Override hashing to match equals().
      *
@@ -78,14 +63,15 @@ data class CircularList<T>(
      */
     fun reverseN(n: Int) : CircularList<T> =
         CircularList(
-            (0 ..< items.size).map { i ->
-                if (i < n) {
-                    get(n - i - 1)
+            items.mapIndexed { i, v ->
+                val indexFromCurrent = (i - current).mod(items.size)
+                if (indexFromCurrent < n) {
+                    get(n - indexFromCurrent - 1)
                 } else {
-                    get(i)
+                    v
                 }
             },
-            0
+            current
         )
 
     /**
@@ -94,10 +80,8 @@ data class CircularList<T>(
      * We always put the current item first.
      */
     override fun toString(): String {
-        return (0..< items.size)
-            .map { index ->
-                val v = get(index)
-                if (index == 0) "[$v]" else "$v"
+        return items.mapIndexed { i, v ->
+                if (i == current) "[$v]" else "$v"
             }
             .joinToString(" ")
     }
