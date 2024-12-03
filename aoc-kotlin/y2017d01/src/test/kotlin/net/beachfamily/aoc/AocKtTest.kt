@@ -92,5 +92,25 @@ class AocKtTest {
         // Test with a string of whitespace
         assertEquals(listOf<String>(), words(" \n\t "))
     }
+
+
+    @Test
+    fun testTranspose() {
+        // Test with a 2x3 matrix
+        val matrix2x3 = sequenceOf(
+            sequenceOf(1, 2, 3),
+            sequenceOf(4, 5, 6, 7)
+        )
+
+        val transposed = transpose(matrix2x3).toList().map { it.toList() }
+
+        val expectedTransposed2x3 = listOf(
+            listOf(1, 4),
+            listOf(2, 5),
+            listOf(3, 6)
+        )
+        
+        assertEquals(expectedTransposed2x3, transposed)
+    }
 }
 

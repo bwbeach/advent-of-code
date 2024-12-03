@@ -64,3 +64,21 @@ fun lines(s: String) : List<String> =
  */
 fun words(s: String) : List<String> =
     s.split(Regex("\\s+")).filter { it.isNotBlank() }
+
+/**
+ * Transposes a sequence of sequences.
+ * 
+ * The first item in the returned sequence is a sequence of the first item
+ * in each of the input sequences.  The length of the output sequence is
+ * the minimum of the lengths of the input sequences.
+ */
+fun <T> transpose(input: Sequence<Sequence<T>>): Sequence<Sequence<T>> = sequence {
+    // Get iterators for each sequence in the input
+    val iterators = input.map { it.iterator() }.toList()
+
+    // Loop until any of the iterators has no next element
+    while (iterators.all { it.hasNext() }) {
+        // Yield a sequence from the next elements of each iterator
+        yield(iterators.map { it.next() }.asSequence())
+    }
+}
