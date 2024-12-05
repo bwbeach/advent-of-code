@@ -23,7 +23,7 @@ fun main() {
 
 fun part1(s: String) : Int {
     val input = seqOfSeqOfInt(s)
-    val twoSeqs = transpose(input)
+    val twoSeqs = input.transpose()
     val sorted = twoSeqs.map { it.sortedSeq() }
     val (a, b) = sorted.asPair()
     val zipped = a.zip(b)

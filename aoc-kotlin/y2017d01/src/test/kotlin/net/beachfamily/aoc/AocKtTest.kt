@@ -102,14 +102,14 @@ class AocKtTest {
             sequenceOf(4, 5, 6, 7)
         )
 
-        val transposed = transpose(matrix2x3).toList().map { it.toList() }
+        val transposed = matrix2x3.transpose().toList().map { it.toList() }
 
         val expectedTransposed2x3 = listOf(
             listOf(1, 4),
             listOf(2, 5),
             listOf(3, 6)
         )
-        
+
         assertEquals(expectedTransposed2x3, transposed)
     }
 }
