@@ -116,7 +116,6 @@ class AocKtTest {
 
     @Test
     fun testCountOccurrences() {
-        // Test with a list containing multiple occurrences
         val input = sequenceOf("apple", "banana", "apple", "orange", "banana", "apple")
         val expected = mapOf(
             "apple" to 3,
@@ -124,6 +123,14 @@ class AocKtTest {
             "orange" to 1
         )
         assertEquals(expected, input.countOccurrences())
+    }
+
+    @Test
+    fun testPairs() {
+        assertEquals(listOf<Pair<Int, Int>>(), sequenceOf<Int>().pairs().toList())
+        assertEquals(listOf<Pair<Int, Int>>(), sequenceOf(1).pairs().toList())
+        assertEquals(listOf(1 to 2), sequenceOf(1, 2).pairs().toList())
+        assertEquals(listOf(1 to 2, 2 to 3), sequenceOf(1, 2, 3).pairs().toList())
     }
 }
 

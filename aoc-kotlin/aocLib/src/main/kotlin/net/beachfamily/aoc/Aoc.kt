@@ -96,3 +96,18 @@ fun <T> Sequence<T>.countOccurrences(): Map<T, Int> {
         acc
     }
 }
+
+/**
+ * Takes a Sequence of values and returns a Sequence of Pairs of adjacent values.
+ */
+fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T>> = sequence {
+    val iterator = this@pairs.iterator()
+    if (iterator.hasNext()) {
+        var previous = iterator.next()
+        while (iterator.hasNext()) {
+            val current = iterator.next()
+            yield(Pair(previous, current))
+            previous = current
+        }
+    }
+}
