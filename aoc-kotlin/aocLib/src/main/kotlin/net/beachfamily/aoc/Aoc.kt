@@ -111,3 +111,25 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T>> = sequence {
         }
     }
 }
+
+/**
+ * Parses a multi-line string where each line is a whitespace-separated list of Ints.
+ */
+fun seqOfSeqOfInt(input: String): Sequence<Sequence<Int>> {
+    return lines(input).asSequence().map { words(it).asSequence().map { it.toInt() } }
+}
+
+/**
+ * Sorts a Sequence.
+ */
+fun <T : Comparable<T>> Sequence<T>.sortedSeq(): Sequence<T> {
+    return this.toList().sorted().asSequence()
+}
+
+/**
+ * Convert a Sequence of two things into a Pair
+ */
+fun <T> Sequence<T>.asPair(): Pair<T, T> {
+    require(this.count() == 2)
+    return this.toList().let { it[0] to it[1] }
+}
