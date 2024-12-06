@@ -85,3 +85,14 @@ fun <T> Sequence<Sequence<T>>.transpose(): Sequence<Sequence<T>> {
         }
     }
 }
+
+/**
+ * Takes a sequence of values and produces a map from value to the number of times
+ * that value occurs in the sequence.
+ */
+fun <T> Sequence<T>.countOccurrences(): Map<T, Int> {
+    return this.fold(mutableMapOf()) { acc, item ->
+        acc[item] = acc.getOrDefault(item, 0) + 1
+        acc
+    }
+}

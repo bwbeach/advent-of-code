@@ -22,15 +22,18 @@ fun main() {
 }
 
 fun part1(s: String) : Int {
-    val input = seqOfSeqOfInt(s)
-    val twoSeqs = input.transpose()
-    val sorted = twoSeqs.map { it.sortedSeq() }
-    val (a, b) = sorted.asPair()
-    val zipped = a.zip(b)
-    return zipped.map { abs(it.first - it.second) }.sum()
+    return seqOfSeqOfInt(s)
+        .transpose()
+        .map { it.sortedSeq() }
+        .transpose()
+        .map { it.asPair() }
+        .map { abs(it.first - it.second) }
+        .sum()
 }
 
 fun part2(s: String) : Int {
-    return s.length
+    val (list1, list2) = seqOfSeqOfInt(s).transpose().asPair()
+    val counts = list2.countOccurrences()
+    return list1.map { (counts[it] ?: 0) * it }.sum()
 }
 

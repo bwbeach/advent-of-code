@@ -112,5 +112,18 @@ class AocKtTest {
 
         assertEquals(expectedTransposed2x3, transposed)
     }
+
+
+    @Test
+    fun testCountOccurrences() {
+        // Test with a list containing multiple occurrences
+        val input = sequenceOf("apple", "banana", "apple", "orange", "banana", "apple")
+        val expected = mapOf(
+            "apple" to 3,
+            "banana" to 2,
+            "orange" to 1
+        )
+        assertEquals(expected, input.countOccurrences())
+    }
 }
 
