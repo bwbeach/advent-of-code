@@ -137,5 +137,5 @@ private fun finalState(s: String): FullState {
 }
 
 fun part2b(s: String): Int {
-    kreturn finalState(s).score2
+    return finalState(s).score2
 }

@@ -12,10 +12,36 @@ fun part1(s: String): Int {
 
 fun isOkPart1(seq: Sequence<Int>) : Boolean {
     val deltas = seq.zipWithNext { a, b -> b - a }
-    return deltas.all { 1 <= it && it <= 3 } || deltas.all { -3 <= it && it <= -1 }
+    return deltas.all { it in 1..3 } || deltas.all { -3 <= it && it <= -1 }
 }
 
 fun part2(s: String) : Int {
-    return s.length
+    return seqOfSeqOfInt(s).filter { isOkPart2(it) }.count()
 }
+
+fun isOkPart2(seq: Sequence<Int>) : Boolean {
+    val options = sequence {
+        yield(seq)
+        yieldAll(seq.allPossibleDrops())
+    }
+    return options.any { isOkPart1(it) }
+}
+
+fun <T> Sequence<T>.allPossibleDrops(): Sequence<Sequence<T>> =
+    sequence {
+        val seq: Sequence<T> = this@allPossibleDrops
+        for (i in 0 until this@allPossibleDrops.count()) {
+            yield(seq.dropNth(i))
+        }
+    }
+
+fun <T> Sequence<T>.dropNth(n: Int): Sequence<T> =
+    sequence {
+        for ((i, v) in this@dropNth.withIndex()) {
+            if (i != n) {
+                yield(v)
+            }
+        }
+    }
+
 
