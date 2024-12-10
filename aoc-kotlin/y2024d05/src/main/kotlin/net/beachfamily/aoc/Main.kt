@@ -19,6 +19,27 @@ fun part1(s: String) : Int {
     return input.books.filter { isBookOk(it, mapToBefore) }.sumOf { it.toList().middle() }
 }
 
+fun part2(s: String) : Int {
+    val input = parse(s)
+    val mapToBefore = input.constraints.map { it.swap() }.toSetMultimap()
+    return input.books
+        .filter { ! isBookOk(it, mapToBefore) }
+        .map { it.toList().sortedWith(Comparator { a, b -> comparePages(a, b, mapToBefore) }) }
+        .sumOf { it.toList().middle() }
+}
+
+fun comparePages(a: Int, b: Int, mapToBefore: ImmutableMultimap<Int, Int>) : Int {
+    val beforeA = mapToBefore[a]
+    if (beforeA != null && b in beforeA) {
+        return -1
+    }
+    val beforeB = mapToBefore[b]
+    if (beforeB != null && a in beforeB) {
+        return 1
+    }
+    throw IllegalArgumentException("No mapping for $a or $b")
+}
+
 fun isBookOk(book: Sequence<Int>, mapToBefore: ImmutableMultimap<Int, Int>) : Boolean {
     val isDisallowed = mutableSetOf<Int>()
     for (i in book) {
@@ -35,10 +56,6 @@ fun isBookOk(book: Sequence<Int>, mapToBefore: ImmutableMultimap<Int, Int>) : Bo
 fun <T> List<T>.middle() : T {
     require(size % 2 == 1) { "Size must be odd" }
     return this[size / 2]
-}
-
-fun part2(s: String) : Int {
-    return s.length
 }
 
 fun parse(s: String) : Input {
