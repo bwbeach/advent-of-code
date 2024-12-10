@@ -132,5 +132,23 @@ class AocKtTest {
         assertEquals(listOf(1 to 2), sequenceOf(1, 2).pairs().toList())
         assertEquals(listOf(1 to 2, 2 to 3), sequenceOf(1, 2, 3).pairs().toList())
     }
+
+    @Test
+    fun testCharGrid() {
+        assertEquals(
+            Grid(
+                0, 1,
+                0, 2,
+                mapOf(
+                    Point(0, 0) to 'a',
+                    Point(0, 1) to 'b',
+                    Point(1, 1) to 'c',
+                    Point(0, 2) to 'd',
+                    Point(1, 2) to 'e'
+                )
+            ),
+            gridOfChar("a\nbc\nde\n")
+        )
+    }
 }
 

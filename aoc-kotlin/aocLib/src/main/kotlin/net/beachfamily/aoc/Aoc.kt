@@ -133,3 +133,47 @@ fun <T> Sequence<T>.asPair(): Pair<T, T> {
     require(this.count() == 2)
     return this.toList().let { it[0] to it[1] }
 }
+
+/**
+ * A location in a grid.
+ */
+data class Point(val x: Int, val y: Int)
+
+/**
+ * A bounded grid of things.
+ */
+data class Grid<T> (
+    val xmin: Int,
+    val xmax: Int,
+    val ymin: Int,
+    val ymax: Int,
+    val data: Map<Point, T>
+)
+
+/**
+ * Make a grid from the given map entries.
+ */
+fun <T> makeGrid(items: Sequence<Pair<Point, T>>): Grid<T> {
+    return Grid(
+        items.map { it.first.x }.min(),
+        items.map { it.first.x }.max(),
+        items.map { it.first.y }.min(),
+        items.map { it.first.y }.max(),
+        items.toMap()
+    )
+}
+
+/**
+ * Convert input into a grid of chars.
+ */
+fun gridOfChar(input: String): Grid<Char> {
+    return makeGrid(
+        sequence {
+            for ((y, line) in lines(input).withIndex()) {
+                for ((x, c) in line.withIndex()) {
+                    yield(Pair(Point(x, y), c))
+                }
+            }
+        }
+    )
+}
