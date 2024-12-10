@@ -190,7 +190,7 @@ fun gridOfChar(input: String): Grid<Char> {
 fun <K, V> Sequence<Pair<K, V>>.toSetMultimap(): ImmutableMultimap<K, V> {
     val builder = ImmutableSetMultimap.builder<K, V>()
     for ((k, v) in this) {
-        builder.put(k, v)
+        builder.put(k!!, v!!)
     }
     return builder.build()
 }
