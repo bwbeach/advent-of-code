@@ -1,5 +1,6 @@
 package net.beachfamily.aoc
 
+import com.google.common.collect.ImmutableSetMultimap
 import org.junit.jupiter.api.Assertions.assertEquals
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
@@ -16,6 +17,23 @@ class AocKtTest {
         )
 
         assertEquals(expected, allPairs(input).toList())
+    }
+
+    @Test
+    fun testToSetMultimap() {
+        val input = sequenceOf(
+            "fruit" to "apple",
+            "vegetable" to "carrot",
+            "fruit" to "banana",
+            "vegetable" to "lettuce"
+        )
+        val expected = ImmutableSetMultimap.of(
+            "fruit", "apple",
+            "vegetable", "carrot",
+            "fruit", "banana",
+            "vegetable", "lettuce",
+        )
+        assertEquals(expected, input.toSetMultimap())
     }
 
 
@@ -150,5 +168,7 @@ class AocKtTest {
             gridOfChar("a\nbc\nde\n")
         )
     }
+    
+    
 }
 

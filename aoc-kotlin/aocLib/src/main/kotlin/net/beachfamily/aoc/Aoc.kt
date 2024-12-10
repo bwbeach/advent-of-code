@@ -1,5 +1,7 @@
 package net.beachfamily.aoc
 
+import com.google.common.collect.ImmutableMultimap
+import com.google.common.collect.ImmutableSetMultimap
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -180,4 +182,15 @@ fun gridOfChar(input: String): Grid<Char> {
             }
         }
     )
+}
+
+/**
+ * Builds a multimap from the pairs of keys/values provided.
+ */
+fun <K, V> Sequence<Pair<K, V>>.toSetMultimap(): ImmutableMultimap<K, V> {
+    val builder = ImmutableSetMultimap.builder<K, V>()
+    for ((k, v) in this) {
+        builder.put(k, v)
+    }
+    return builder.build()
 }
