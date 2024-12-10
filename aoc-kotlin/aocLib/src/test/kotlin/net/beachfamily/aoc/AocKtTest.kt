@@ -87,7 +87,7 @@ class AocKtTest {
         assertEquals(listOf<String>(), lines(""))
 
         // Test with a string containing empty lines
-        assertEquals(listOf("line1", "line3"), lines("line1\n\nline3"))
+        assertEquals(listOf("line1", "", "line3"), lines("\nline1\n\nline3\n\n"))
     }
 
     @Test

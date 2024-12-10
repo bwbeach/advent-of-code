@@ -48,13 +48,15 @@ fun <T> singleItem(sequence: Sequence<T>): T {
 }
 
 /**
- * Splits the input string at newlines and returns a list of all non-blank lines.
+ * Splits the input string at newlines and returns a list of lines, trimming
+ * leading and trailing blank lines.
  *
  * @param s Input string
  * @return A list of non-blank lines from the input string.
  */
-fun lines(s: String) : List<String> =
-    s.split('\n').filter { it.isNotBlank() }
+fun lines(s: String) : List<String> {
+    return s.split('\n').dropWhile { it.isBlank() }.dropLastWhile { it.isBlank() }
+}
 
 /**
  * Splits the input string into words, where words are defined as sequences of non-whitespace
@@ -203,7 +205,7 @@ fun <T> Sequence<T>.splitBy(predicate: (T) -> Boolean): Sequence<Sequence<T>> =
     sequence {
         val iterator = this@splitBy.iterator()
         while (iterator.hasNext()) {
-            yield(sequence {
+            val seq = sequence {
                 while (iterator.hasNext()) {
                     val next = iterator.next()
                     if (predicate(next)) {
@@ -211,6 +213,7 @@ fun <T> Sequence<T>.splitBy(predicate: (T) -> Boolean): Sequence<Sequence<T>> =
                     }
                     yield(next)
                 }
-            })
+            }
+            yield(seq.toList().asSequence())
         }
     }
