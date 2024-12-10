@@ -11,7 +11,24 @@ fun part1(s: String) : Int {
 }
 
 fun part2(s: String) : Int {
-    return s.length
+    val grid = gridOfChar(s)
+    var count = 0
+    for (y in grid.ymin + 1..grid.ymax - 1) {
+        for (x in grid.xmin + 1 ..grid.xmax - 1) {
+            val p = Point(x, y)
+            if (grid[p] == 'A') {
+                if (isMandS(grid[Point(x - 1, y - 1)], grid[Point(x + 1, y + 1)]) &&
+                    isMandS(grid[Point(x - 1, y + 1)], grid[Point(x + 1, y - 1)])) {
+                    count += 1
+                }
+            }
+        }
+    }
+    return count
+}
+
+fun isMandS(x: Char?, y: Char?): Boolean {
+    return (x == 'M' && y == 'S') || (x == 'S' && y == 'M')
 }
 
 /**

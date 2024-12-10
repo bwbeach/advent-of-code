@@ -142,13 +142,17 @@ data class Point(val x: Int, val y: Int)
 /**
  * A bounded grid of things.
  */
-data class Grid<T> (
+data class Grid<T>(
     val xmin: Int,
     val xmax: Int,
     val ymin: Int,
     val ymax: Int,
     val data: Map<Point, T>
-)
+) {
+    operator fun get(point: Point): T? {
+        return data[point]
+    }
+}
 
 /**
  * Make a grid from the given map entries.

@@ -5,9 +5,8 @@ import kotlin.test.assertEquals
 
 class MainTest {
 
-    @Test
-    fun `examples from part1 problem statement`() {
-        val testInput =
+    companion object {
+        fun testInput() =
             """
             MMMSXXMASM
             MSAMXMSMSA
@@ -20,12 +19,16 @@ class MainTest {
             MAMMMXMMMM
             MXMXAXMASX
             """.trimIndent()
-        assertEquals(18, part1(testInput))
+    }
+
+    @Test
+    fun `examples from part1 problem statement`() {
+        assertEquals(18, part1(testInput()))
     }
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
+        assertEquals(9, part2(testInput()))
     }
 
     @Test
