@@ -194,3 +194,23 @@ fun <K, V> Sequence<Pair<K, V>>.toSetMultimap(): ImmutableMultimap<K, V> {
     }
     return builder.build()
 }
+
+/**
+ * Splits a sequence into a sequence of sequences, based on a predicate
+ * that identifies the split points.
+ */
+fun <T> Sequence<T>.splitBy(predicate: (T) -> Boolean): Sequence<Sequence<T>> =
+    sequence {
+        val iterator = this@splitBy.iterator()
+        while (iterator.hasNext()) {
+            yield(sequence {
+                while (iterator.hasNext()) {
+                    val next = iterator.next()
+                    if (predicate(next)) {
+                        break
+                    }
+                    yield(next)
+                }
+            })
+        }
+    }

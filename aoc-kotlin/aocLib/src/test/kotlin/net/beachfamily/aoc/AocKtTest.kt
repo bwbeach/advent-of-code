@@ -170,5 +170,28 @@ class AocKtTest {
     }
     
     
+    @Test
+    fun testSplitBy() {
+        // Test with a sequence split by a predicate
+        val input = sequenceOf(1, 2, 0, 3, 4, 0, 5)
+        val expected = listOf(
+            listOf(1, 2),
+            listOf(3, 4),
+            listOf(5)
+        )
+        assertEquals(expected, input.splitBy { it == 0 }.map { it.toList() }.toList())
+
+        // Test with no splits
+        val inputNoSplit = sequenceOf(1, 2, 3, 4, 5)
+        val expectedNoSplit = listOf(
+            listOf(1, 2, 3, 4, 5)
+        )
+        assertEquals(expectedNoSplit, inputNoSplit.splitBy { it == 0 }.map { it.toList() }.toList())
+
+        // Test with an empty sequence
+        val emptyInput = sequenceOf<Int>()
+        val expectedEmpty = emptyList<List<Int>>()
+        assertEquals(expectedEmpty, emptyInput.splitBy { it == 0 }.map { it.toList() }.toList())
+    }
 }
 
