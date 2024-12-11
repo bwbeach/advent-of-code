@@ -141,7 +141,11 @@ fun <T> Sequence<T>.asPair(): Pair<T, T> {
 /**
  * A location in a grid.
  */
-data class Point(val x: Int, val y: Int)
+data class Point(val x: Int, val y: Int) {
+    operator fun plus(other: Point): Point {
+        return Point(x + other.x, y + other.y)
+    }
+}
 
 /**
  * A bounded grid of things.
