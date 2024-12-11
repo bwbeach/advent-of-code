@@ -6,7 +6,7 @@ import kotlin.test.assertNull
 
 class MainTest {
 
-    fun testInput(): String =
+    private fun testInput(): String =
         """
         ....#.....
         .........#

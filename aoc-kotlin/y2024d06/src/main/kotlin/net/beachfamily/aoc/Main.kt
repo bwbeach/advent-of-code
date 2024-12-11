@@ -1,7 +1,5 @@
 package net.beachfamily.aoc
 
-import apple.laf.JRSUIConstants
-
 fun main() {
     val input = readInput("y2024d06")
     println(part1(input))
