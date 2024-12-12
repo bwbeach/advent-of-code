@@ -9,16 +9,14 @@ fun main() {
 data class State(
     val pos: Point,
     val dir: Point,
-    val visited: Set<Point>,
-    val map: Grid<Char>
 ) {
-    fun next(): State? {
+    fun next(map: Grid<Char>): State? {
         val newPos = pos + dir
         return when (map[newPos]) {
             null -> null
             '#' -> copy(dir = dir.turnRight())
             else -> {
-                copy(pos = newPos, visited = visited + newPos)
+                copy(pos = newPos)
             }
         }
     }
@@ -31,10 +29,8 @@ fun part1(s: String) : Int {
     val start = State(
         pos = findStart(grid),
         dir = Point(0, -1),
-        visited = setOf(findStart(grid)),
-        map = grid
     )
-    return generateSequence(start) { it.next() }
+    return generateSequence(start) { it.next(grid) }
         .map { it.pos }
         .toSet()
         .size

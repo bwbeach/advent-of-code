@@ -26,23 +26,21 @@ class MainTest {
         val start = State(
             findStart(grid),
             Point(0, -1),
-            setOf(),
-            grid
         )
         assertEquals(Point(4, 6), start.pos)
         assertEquals(
-            start.copy(pos=Point(4, 5), visited=setOf(Point(4, 5))),
-            start.next()
+            start.copy(pos=Point(4, 5)),
+            start.next(grid)
         )
 
         val s1 = start.copy(pos = Point(4, 1))
         assertEquals(
             s1.copy(dir=Point(1, 0)),
-            s1.next()
+            s1.next(grid)
         )
 
         val s2 = start.copy(pos = Point(3, 0))
-        assertNull(s2.next())
+        assertNull(s2.next(grid))
     }
 
     @Test
