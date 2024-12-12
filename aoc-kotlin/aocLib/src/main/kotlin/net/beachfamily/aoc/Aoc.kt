@@ -160,6 +160,30 @@ data class Grid<T>(
     operator fun get(point: Point): T? {
         return data[point]
     }
+
+    fun update(point: Point, value: T?) =
+        makeGrid(
+            sequence {
+                if (value != null) {
+                    yield(Pair(point, value))
+                }
+                yieldAll(
+                    data.entries
+                        .filter { it.key != point}
+                        .map { Pair(it.key, it.value) }
+                )
+            }
+        )
+
+    fun allPoints(): Sequence<Point> {
+        return sequence {
+            for (y in ymin..ymax) {
+                for (x in xmin..xmax) {
+                    yield(Point(x, y))
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -221,3 +245,17 @@ fun <T> Sequence<T>.splitBy(predicate: (T) -> Boolean): Sequence<Sequence<T>> =
             yield(seq.toList().asSequence())
         }
     }
+
+/**
+ * Returns true if-and-only-if the sequence contains a repeated value.
+ */
+fun <T> Sequence<T>.hasRepeat(): Boolean {
+    val seen = mutableSetOf<T>()
+    for (x in this) {
+        if (x in seen) {
+            return true
+        }
+        seen.add(x)
+    }
+    return false
+}

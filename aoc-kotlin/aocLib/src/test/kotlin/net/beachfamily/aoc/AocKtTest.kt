@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableSetMultimap
 import org.junit.jupiter.api.Assertions.assertEquals
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class AocKtTest {
 
@@ -169,7 +171,6 @@ class AocKtTest {
         )
     }
     
-    
     @Test
     fun testSplitBy() {
         // Test with a sequence split by a predicate
@@ -192,6 +193,12 @@ class AocKtTest {
         val emptyInput = sequenceOf<Int>()
         val expectedEmpty = emptyList<List<Int>>()
         assertEquals(expectedEmpty, emptyInput.splitBy { it == 0 }.map { it.toList() }.toList())
+    }
+
+    @Test
+    fun testHasRepeat() {
+        assertFalse(sequenceOf(1, 2, 3).hasRepeat())
+        assertTrue(sequenceOf(1, 2, 1).hasRepeat())
     }
 }
 

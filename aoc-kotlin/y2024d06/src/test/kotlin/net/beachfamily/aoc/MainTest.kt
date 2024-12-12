@@ -50,6 +50,6 @@ class MainTest {
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(109, part2(testInput()))
+        assertEquals(6, part2(testInput()))
     }
 }

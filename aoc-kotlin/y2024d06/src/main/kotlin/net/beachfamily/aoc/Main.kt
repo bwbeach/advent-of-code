@@ -24,6 +24,23 @@ data class State(
 
 fun Point.turnRight(): Point = Point(-y, x)
 
+fun findStart(grid: Grid<Char>): Point {
+    for ((k, v) in grid.data.entries) {
+        if (v == '^') {
+            return k
+        }
+    }
+    throw IllegalArgumentException("No start found")
+}
+
+fun Grid<Char>.hasRepeat(): Boolean {
+    val start = State(
+        pos = findStart(this),
+        dir = Point(0, -1),
+    )
+    return generateSequence(start) { it.next(this) }.hasRepeat()
+}
+
 fun part1(s: String) : Int {
     val grid = gridOfChar(s)
     val start = State(
@@ -36,16 +53,12 @@ fun part1(s: String) : Int {
         .size
 }
 
-fun findStart(grid: Grid<Char>): Point {
-    for ((k, v) in grid.data.entries) {
-        if (v == '^') {
-            return k
-        }
-    }
-    throw IllegalArgumentException("No start found")
-}
-
 fun part2(s: String) : Int {
-    return s.length
+    val grid = gridOfChar(s)
+    return grid
+        .allPoints()
+        .filter { grid[it] == '.' }
+        .filter { grid.update(it, '#').hasRepeat() }
+        .count()
 }
 
