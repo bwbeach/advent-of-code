@@ -259,3 +259,16 @@ fun <T> Sequence<T>.hasRepeat(): Boolean {
     }
     return false
 }
+
+/**
+ * Returns a pair containing the first item in the Sequence and a Sequence of 
+ * everything but the first item.
+ */
+fun <T> Sequence<T>.headAndTail(): Pair<T, Sequence<T>> {
+    val iterator = this.iterator()
+    if (!iterator.hasNext()) throw IllegalArgumentException("Sequence is empty")
+    val head = iterator.next()
+    val tail = this.drop(1)
+    return Pair(head, tail)
+}
+

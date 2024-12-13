@@ -200,5 +200,12 @@ class AocKtTest {
         assertFalse(sequenceOf(1, 2, 3).hasRepeat())
         assertTrue(sequenceOf(1, 2, 1).hasRepeat())
     }
+
+    @Test
+    fun testHeadAndTail() {
+        val (h, t) = sequenceOf(1, 2, 3).headAndTail()
+        assertEquals(1, h)
+        assertEquals(listOf(2, 3), t.toList())
+    }
 }
 
