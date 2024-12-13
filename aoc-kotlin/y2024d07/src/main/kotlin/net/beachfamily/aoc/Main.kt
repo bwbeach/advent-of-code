@@ -11,14 +11,29 @@ fun main() {
     println(part2(input))
 }
 
-fun part1(s: String) : Long =
-    parse(s)
-        .filter(::equationWorks)
+typealias Op = (Long, Long) -> Long
+
+fun part1(s: String) : Long {
+    val ops: Sequence<Op> = sequenceOf(
+        { a, b -> a + b },
+        { a, b -> a * b },
+    )
+    return parse(s)
+        .filter { equationWorks(it, ops) }
         .map { it.testValue }
         .sum()
+}
 
-fun part2(s: String) : Int {
-    return s.length
+fun part2(s: String) : Long {
+    val ops: Sequence<Op> = sequenceOf(
+        { a, b -> a + b },
+        { a, b -> a * b },
+        { a, b -> (a.toString() + b.toString()).toLong() }
+    )
+    return parse(s)
+        .filter { equationWorks(it, ops) }
+        .map { it.testValue }
+        .sum()
 }
 
 fun parse(s: String): Sequence<Equation> =
@@ -32,16 +47,12 @@ fun parseEquation(s: String): Equation {
     )
 }
 
-fun equationWorks(e: Equation): Boolean {
-    return allValues(e.numbers).contains(e.testValue)
+fun equationWorks(e: Equation, ops: Sequence<Op>): Boolean {
+    return allValues(e.numbers, ops).contains(e.testValue)
 }
 
-fun allValues(numbers: Sequence<Long>): Sequence<Long> {
+fun allValues(numbers: Sequence<Long>, ops: Sequence<Op>): Sequence<Long> {
     val (head, tail) = numbers.headAndTail()
-    val ops = sequenceOf<(Long, Long) -> Long>(
-        { a, b -> a + b },
-        { a, b -> a * b },
-    )
     return tail.fold(sequenceOf(head), { a, b -> tryAllOps(a, ops, b) })
 }
 
