@@ -63,7 +63,7 @@ class MainTest {
     )
 
     @Test
-    fun `testScore`() {
+    fun testScore() {
         for ((text, expected) in scoreExamples) {
             assertEquals(expected, part1(text))
         }
