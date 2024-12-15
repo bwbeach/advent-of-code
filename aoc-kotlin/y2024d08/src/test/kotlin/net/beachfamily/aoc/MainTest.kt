@@ -28,6 +28,6 @@ class MainTest {
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
+        assertEquals(34, part2(testInput()))
     }
 }
