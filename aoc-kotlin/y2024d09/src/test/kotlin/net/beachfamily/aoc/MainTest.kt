@@ -5,9 +5,11 @@ import kotlin.test.assertEquals
 
 class MainTest {
 
+    fun testInput(): String = "2333133121414131402"
+
     @Test
     fun `examples from part1 problem statement`() {
-        assertEquals(4, part1("1122"))
+        assertEquals(1928, part1(testInput()))
     }
 
     @Test
