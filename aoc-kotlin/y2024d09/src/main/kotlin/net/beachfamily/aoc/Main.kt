@@ -126,8 +126,8 @@ fun parse2(input: String): State {
     return State(gaps, files)
 }
 
-fun pretty(disk: List<Int>) =
-    disk
-        .map { if (it == EMPTY) "." else "${it}"}
-        .joinToString(separator = "")
+//fun pretty(disk: List<Int>) =
+//    disk
+//        .map { if (it == EMPTY) "." else "${it}"}
+//        .joinToString(separator = "")
 
