@@ -170,6 +170,22 @@ class AocKtTest {
             gridOfChar("a\nbc\nde\n")
         )
     }
+
+    @Test
+    fun testIntGrid() {
+        assertEquals(
+            Grid(
+                0, 1,
+                0, 1,
+                mapOf(
+                    Point(0, 0) to 1,
+                    Point(0, 1) to 2,
+                    Point(1, 1) to 3,
+                )
+            ),
+            gridOfInt("1\n23\n")
+        )
+    }
     
     @Test
     fun testSplitBy() {

@@ -206,6 +206,21 @@ fun gridOfChar(input: String): Grid<Char> {
 }
 
 /**
+ * Convert input into a grid of chars.
+ */
+fun gridOfInt(input: String): Grid<Int> {
+    return makeGrid(
+        sequence {
+            for ((y, line) in lines(input).withIndex()) {
+                for ((x, c) in line.withIndex()) {
+                    yield(Pair(Point(x, y), c.toString().toInt()))
+                }
+            }
+        }
+    )
+}
+
+/**
  * Builds a multimap from the pairs of keys/values provided.
  */
 fun <K, V> Sequence<Pair<K, V>>.toSetMultimap(): ImmutableMultimap<K, V> {
