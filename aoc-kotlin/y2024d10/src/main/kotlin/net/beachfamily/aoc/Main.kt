@@ -22,8 +22,8 @@ fun reachablePeaks(grid: Grid<Int>, fromHeight: Int): Multimap<Point, Point> {
         grid.data
             .entries
             .asSequence()
-            .filter { (k, v) -> v == fromHeight }
-            .map { (k, v) -> k }
+            .filter { it.value == fromHeight }
+            .map { it.key }
 
     return if (fromHeight == 9) {
         pointsAtHeight
