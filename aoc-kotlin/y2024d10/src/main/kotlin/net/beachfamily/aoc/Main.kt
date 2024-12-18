@@ -1,7 +1,5 @@
 package net.beachfamily.aoc
 
-import com.google.common.collect.Multimap
-
 fun main() {
     val input = readInput("y2024d10")
     println(part1(input))
@@ -10,44 +8,44 @@ fun main() {
 
 fun part1(s: String) : Int {
     val grid = gridOfInt(s)
-    val posToPeaks = reachablePeaks(grid, 0)
+    val posToPeaks = reachablePeaks(grid)
     return posToPeaks.values.map { it.size }.sum()
 }
 
 fun part2(s: String) : Int {
     val grid = gridOfInt(s)
-    val posToPeaks = pathCount(grid, 0)
+    val posToPeaks = pathCount(grid)
     return posToPeaks.values.sum()
 }
 
 /**
  * Returns a Multimap from a point at a given height to all the peaks reachable from it.
  */
-fun reachablePeaks(grid: Grid<Int>, fromHeight: Int): Map<Point, Set<Point>> {
-    val pointsAtHeight =
-        grid.data
-            .entries
-            .asSequence()
-            .filter { it.value == fromHeight }
-            .map { it.key }
-
-    return if (fromHeight == 9) {
-        pointsAtHeight.associateWith { setOf(it) }
-    } else {
-        val nextHigher = reachablePeaks(grid, fromHeight + 1)
-        pointsAtHeight.associateWith {
-            neighbors(it)
-                .mapNotNull { nextHigher[it] }
-                .fold(setOf<Point>()) { acc, set -> acc.union(set) }
-        }
-    }
-}
+fun reachablePeaks(grid: Grid<Int>): Map<Point, Set<Point>> =
+    flowDown(
+        grid,
+        0,
+        { setOf(it) },
+        { it.fold(setOf()) { acc, set -> acc.union(set)}}
+    )
 
 /**
- * Returns a Map from a point at a given height to the number
- * of paths to a peak from that point.
+ * Returns a map from a point to the number of paths to peak from that point.
  */
-fun pathCount(grid: Grid<Int>, fromHeight: Int): Map<Point, Int> {
+fun pathCount(grid: Grid<Int>): Map<Point, Int> =
+    flowDown(
+        grid,
+        0,
+        { 1 },
+        { it.sum() }
+    )
+
+fun <T> flowDown(
+    grid: Grid<Int>,
+    fromHeight: Int,
+    peakFcn: (Point) -> T,
+    lowerFcn: (Sequence<T>) -> T,
+): Map<Point, T> {
     val pointsAtHeight =
         grid.data
             .entries
@@ -55,14 +53,19 @@ fun pathCount(grid: Grid<Int>, fromHeight: Int): Map<Point, Int> {
             .filter { it.value == fromHeight }
             .map { it.key }
 
-    return if (fromHeight == 9) {
-        pointsAtHeight.associateWith { 1 }
-    } else {
-        val nextHigher = pathCount(grid, fromHeight + 1)
-        pointsAtHeight
-            .associateWith {
-                neighbors(it).mapNotNull {nextHigher[it]}.sum()
-            }
+    val nextHigher =
+        if (fromHeight == 9) {
+            mapOf()
+        } else {
+            flowDown(grid, fromHeight + 1, peakFcn, lowerFcn)
+        }
+
+    return pointsAtHeight.associateWith {
+        if (fromHeight == 9) {
+            peakFcn(it)
+        } else {
+            lowerFcn(neighbors(it).mapNotNull { nextHigher[it] }.asSequence())
+        }
     }
 }
 
