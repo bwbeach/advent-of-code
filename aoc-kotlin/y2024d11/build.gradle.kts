@@ -10,6 +10,7 @@ application {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":aocLib"))
+    implementation("io.arrow-kt:arrow-core:1.2.4")
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.2")
 }
