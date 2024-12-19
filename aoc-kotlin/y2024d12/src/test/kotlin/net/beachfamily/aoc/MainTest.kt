@@ -36,6 +36,16 @@ class MainTest {
         MMMISSJEEE
         """.trimIndent()
 
+    fun testInput4() =
+        """
+        AAAAAA
+        AAABBA
+        AAABBA
+        ABBAAA
+        ABBAAA
+        AAAAAA
+        """.trimIndent()
+
     @Test
     fun `examples from part1 problem statement`() {
         assertEquals(140, part1(testInput1()))
@@ -45,6 +55,9 @@ class MainTest {
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
+        assertEquals(80, part2(testInput1()))
+        assertEquals(436, part2(testInput2()))
+        assertEquals(1206, part2(testInput3()))
+        assertEquals(368, part2(testInput4()))
     }
 }
