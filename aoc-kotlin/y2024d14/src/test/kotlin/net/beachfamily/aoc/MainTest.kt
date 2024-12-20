@@ -36,9 +36,4 @@ class MainTest {
     fun `examples from part1 problem statement`() {
         assertEquals(12, part1(testInput(), 11, 7))
     }
-
-    @Test
-    fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
-    }
 }
