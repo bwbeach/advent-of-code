@@ -22,7 +22,7 @@ fun parse(s: String): Pair<State, String> {
     val (a, b) = lines(s).asSequence().splitBy { it.isEmpty() }.asPair()
     val grid = gridOfChar(a.joinToString("\n"))
     val instructions = b.joinToString("").filter { !it.isWhitespace()}
-    return Pair(State.Factory.create(grid), instructions)
+    return Pair(State.create(grid), instructions)
 }
 
 class State(
@@ -35,7 +35,7 @@ class State(
     // Where is the robot?
     var robotPos: Point,
 ) {
-    companion object Factory {
+    companion object {
         fun create(grid: Grid<Char>): State =
             State(
                 grid.xmin,
@@ -51,7 +51,7 @@ class State(
             )
     }
 
-    fun push(instr: Char) = pushFrom(robotPos, instructionToDir(instr))
+//    fun push(instr: Char) = pushFrom(robotPos, instructionToDir(instr))
 
     fun pushFrom(pos: Point, dir: Point) {
         val next = pos + dir
@@ -75,6 +75,39 @@ class State(
             if (pos == robotPos) {
                 robotPos = next
             }
+        }
+    }
+
+    fun push(instr: Char) {
+        val moves = planMove(instr)
+        if (moves != null) {
+            for (m in moves) {
+                require(contents[m.dst] == '.')
+                contents[m.dst] = contents[m.src]!!
+                contents[m.src] = '.'
+            }
+            robotPos += instructionToDir(instr)
+        }
+    }
+
+    fun planMove(instr: Char): List<Move>? {
+        val dir = instructionToDir(instr)
+        return planMoveFrom(robotPos, dir)
+    }
+
+    fun planMoveFrom(pos: Point, dir: Point): List<Move>? {
+        val what = contents[pos]!!
+        return when (what) {
+            '#' -> null
+            '.' -> listOf()
+            '@', 'O' -> {
+                val rest = planMoveFrom(pos + dir, dir)
+                when (rest) {
+                    null -> null
+                    else -> rest + listOf(Move(pos, pos + dir))
+                }
+            }
+            else -> throw IllegalArgumentException("Bad state: $what")
         }
     }
 
@@ -104,6 +137,11 @@ fun instructionToDir(c: Char): Point =
         'v' -> Point(0, 1)
         else -> throw IllegalArgumentException("Bad instruction: $c")
     }
+
+data class Move(
+    val src: Point,
+    val dst: Point,
+)
 
 fun Point.gps(): Int {
     return x + y * 100
