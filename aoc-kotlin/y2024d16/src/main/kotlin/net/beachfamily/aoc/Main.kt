@@ -31,7 +31,6 @@ fun part1(s: String) : Int {
 }
 
 fun part2(s: String) : Int {
-    val bestScore = part1(s)
 
     val grid = gridOfChar(s)
     val start = MazeNode(grid.find('S'), Point(1, 0))
@@ -53,11 +52,45 @@ fun part2(s: String) : Int {
     }
     val isGoal = { node: MazeNode -> node.pos == finish }
 
-    return depthFirst(start, neighbors, bestScore, isGoal)
-        .flatMap { it.second }
-        .map { it.pos }
-        .toSet()
-        .size
+    // Find the best cost
+    val (bestCost, _) = aStar(start, {0}, neighbors, isGoal )!!
+    println("bestCost = $bestCost")
+
+    // Places to visit: the maze node to look at and the cost we can afford from
+    // that point.
+    val toVisit = mutableListOf(start to bestCost)
+
+    // The nodes we've already visited.
+    val visited = mutableSetOf<MazeNode>()
+
+    // The nodes that passed the test
+    val succeeded = mutableSetOf(start)
+
+    while (toVisit.isNotEmpty()) {
+        // Pull off the next unvisited node
+        val (node, costAllowed) = toVisit.removeFirst()
+        if (node in visited) {
+            continue
+        }
+        visited.add(node)
+        println("visited $node $costAllowed")
+
+        // Can we reach the goal from here within the allowed cost?
+        val bestFromHere = aStar(node, { 0 }, neighbors, isGoal)
+        if (bestFromHere == null || bestFromHere.first > costAllowed) {
+            continue
+        }
+
+        // This node works.  Add its neighbors to the search list.
+        succeeded.add(node)
+        for ((neighbor, stepCost) in neighbors(node)) {
+            if (stepCost <= costAllowed) {
+                toVisit.add(neighbor to costAllowed - stepCost)
+            }
+        }
+    }
+
+    return succeeded.map { it.pos }.toSet().size
 }
 
 fun Point.left() = Point(y, -x)
