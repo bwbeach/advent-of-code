@@ -51,65 +51,67 @@ class State(
             )
     }
 
-//    fun push(instr: Char) = pushFrom(robotPos, instructionToDir(instr))
-
-    fun pushFrom(pos: Point, dir: Point) {
-        val next = pos + dir
-        val what = contents[next]!!
-
-        // can't push into a wall
-        if (what == '#') {
-            return
-        }
-
-        // try pushing non-empty
-        if (what != '.') {
-            pushFrom(next, dir)
-        }
-
-        // if there was already a space, or we just made one, we can
-        // push what's in this spot
-        if (contents[next] == '.') {
-            contents[next] = contents[pos]!!
-            contents[pos] = '.'
-            if (pos == robotPos) {
-                robotPos = next
-            }
-        }
-    }
-
     fun push(instr: Char) {
-        val moves = planMove(instr)
+        val moves = setToMove(instr)
         if (moves != null) {
-            for (m in moves) {
-                require(contents[m.dst] == '.')
-                contents[m.dst] = contents[m.src]!!
-                contents[m.src] = '.'
+            val dir = instructionToDir(instr)
+            // pick up all the things from their old locations, leaving them blank
+            for ((p, c) in moves) {
+                contents[p] = '.'
+            }
+            // drop them in their new locations
+            for ((p, c) in moves) {
+                require(contents[p + dir] == '.')
+                contents[p + dir] = c
             }
             robotPos += instructionToDir(instr)
         }
     }
 
-    fun planMove(instr: Char): List<Move>? {
+    /**
+     * Returns the set of locations of things that will move or null.
+     *
+     * Starts with the robot and includes everything it will push.
+     * Checks that there is empty space to move into.  If anything
+     * that wants to move doesn't have space, returns null.
+     */
+    fun setToMove(instr: Char): Map<Point, Char>? {
         val dir = instructionToDir(instr)
-        return planMoveFrom(robotPos, dir)
+        return buildMoves(findThingsThatMove(robotPos, dir))
     }
 
-    fun planMoveFrom(pos: Point, dir: Point): List<Move>? {
-        val what = contents[pos]!!
-        return when (what) {
-            '#' -> null
-            '.' -> listOf()
-            '@', 'O' -> {
-                val rest = planMoveFrom(pos + dir, dir)
-                when (rest) {
-                    null -> null
-                    else -> rest + listOf(Move(pos, pos + dir))
+    /**
+     * Given a sequence of Point?, returns null if any are null, and a
+     * set of them all otherwise.
+     */
+    fun buildMoves(seq: Sequence<Point?>): Map<Point, Char>? {
+        val result = mutableMapOf<Point, Char>()
+        for (p in seq) {
+            if (p == null) {
+                return null
+            } else {
+                result[p] = contents[p]!!
+            }
+        }
+        return result.toMap()
+    }
+
+    /**
+     * Finds all of the things that move when the given thing (if there is one)
+     * at the given pos moves in the given direction.  Produces null if the
+     * thing at the given position cannot move.
+     */
+    fun findThingsThatMove(pos: Point, dir: Point): Sequence<Point?> =
+        sequence {
+            when (contents[pos]) {
+                '#' -> yield(null)
+                '.' -> {}
+                '@', 'O' -> {
+                    yield(pos)
+                    yieldAll(findThingsThatMove(pos + dir, dir))
                 }
             }
-            else -> throw IllegalArgumentException("Bad state: $what")
         }
-    }
 
     fun score1(): Int {
         return contents.entries
@@ -137,11 +139,6 @@ fun instructionToDir(c: Char): Point =
         'v' -> Point(0, 1)
         else -> throw IllegalArgumentException("Bad instruction: $c")
     }
-
-data class Move(
-    val src: Point,
-    val dst: Point,
-)
 
 fun Point.gps(): Int {
     return x + y * 100
