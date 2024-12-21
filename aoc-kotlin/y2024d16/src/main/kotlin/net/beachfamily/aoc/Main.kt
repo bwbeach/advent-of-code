@@ -28,7 +28,7 @@ fun part1(s: String) : Int {
         }
     }
     val isGoal = { node: MazeNode -> node.pos == finish }
-    val (cost, path) = aStar(start, {0}, neighbors, isGoal )
+    val (cost, _) = aStar(start, {0}, neighbors, isGoal )
     return cost
 }
 
@@ -98,7 +98,7 @@ data class AStarNode<T>(
 ) {
     fun makePath(): List<T> {
         val result = mutableListOf<T>()
-        var current: AStarNode<T>? = this;
+        var current: AStarNode<T>? = this
         while (current != null) {
             result.add(current.node)
             current = current.cameFrom
