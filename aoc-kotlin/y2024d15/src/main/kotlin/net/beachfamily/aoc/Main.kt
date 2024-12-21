@@ -7,23 +7,42 @@ fun main() {
 }
 
 fun part1(s: String) : Int {
-    val (state, instructions) = parse(s)
+    val (state, instructions) = parse(s, false)
     for (c in instructions) {
         state.push(c)
     }
-    return state.score1()
+    return state.score()
 }
 
 fun part2(s: String) : Int {
-    return s.length
+    val (state, instructions) = parse(s, true)
+    for (c in instructions) {
+        state.push(c)
+    }
+    return state.score()
 }
 
-fun parse(s: String): Pair<State, String> {
+fun parse(s: String, isPart2: Boolean): Pair<State, String> {
     val (a, b) = lines(s).asSequence().splitBy { it.isEmpty() }.asPair()
-    val grid = gridOfChar(a.joinToString("\n"))
+    val gridText = a.joinToString("\n")
+    val gridText2 = if (isPart2) double(gridText) else gridText
+    val grid = gridOfChar(gridText2)
     val instructions = b.joinToString("").filter { !it.isWhitespace()}
     return Pair(State.create(grid), instructions)
 }
+
+fun double(s: String): String =
+    s.map {
+        when (it) {
+            '\n' -> "\n"
+            '#' -> "##"
+            '.' -> ".."
+            '@' -> "@."
+            'O' -> "[]"
+            else -> throw IllegalArgumentException("Bad character: $it")
+        }
+    }.joinToString("")
+
 
 class State(
     val xmin: Int,
@@ -110,12 +129,32 @@ class State(
                     yield(pos)
                     yieldAll(findThingsThatMove(pos + dir, dir))
                 }
+                '[' -> {
+                    yield(pos)
+                    yield(pos + Point(1, 0))
+                    if (dir.isVertical()) {
+                        yieldAll(findThingsThatMove(pos + dir, dir))
+                        yieldAll(findThingsThatMove(pos + Point(1, 0) + dir, dir))
+                    } else {
+                        yieldAll(findThingsThatMove(pos + dir + dir, dir))
+                    }
+                }
+                ']' -> {
+                    yield(pos)
+                    yield(pos + Point(-1, 0))
+                    if (dir.isVertical()) {
+                        yieldAll(findThingsThatMove(pos + dir, dir))
+                        yieldAll(findThingsThatMove(pos + Point(-1, 0) + dir, dir))
+                    } else {
+                        yieldAll(findThingsThatMove(pos + dir + dir, dir))
+                    }
+                }
             }
         }
 
-    fun score1(): Int {
+    fun score(): Int {
         return contents.entries
-            .filter { it.value == 'O' }
+            .filter { it.value == 'O' || it.value == '[' }
             .map { it.key.gps() }
             .sum()
     }
@@ -143,3 +182,5 @@ fun instructionToDir(c: Char): Point =
 fun Point.gps(): Int {
     return x + y * 100
 }
+
+fun Point.isVertical(): Boolean = y != 0

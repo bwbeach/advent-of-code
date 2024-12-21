@@ -44,6 +44,19 @@ class MainTest {
         v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^
         """.trimIndent()
 
+    fun part2TestInput() =
+        """
+        #######
+        #...#.#
+        #.....#
+        #..OO@#
+        #..O..#
+        #.....#
+        #######
+
+        <vv<<^^<<^^
+        """.trimIndent()
+
     @Test
     fun `examples from part1 problem statement`() {
         assertEquals(2028, part1(smallTestInput()))
@@ -52,6 +65,7 @@ class MainTest {
 
     @Test
     fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
+        // assertEquals(0, part2(part2TestInput()))
+        assertEquals(9021, part2(bigTestInput()))
     }
 }
