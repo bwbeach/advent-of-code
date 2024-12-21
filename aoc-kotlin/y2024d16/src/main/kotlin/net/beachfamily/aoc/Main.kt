@@ -31,7 +31,33 @@ fun part1(s: String) : Int {
 }
 
 fun part2(s: String) : Int {
-    return s.length
+    val bestScore = part1(s)
+
+    val grid = gridOfChar(s)
+    val start = MazeNode(grid.find('S'), Point(1, 0))
+    val finish = grid.find('E')
+    val neighbors = { node: MazeNode ->
+        sequence {
+            val p = node.pos
+            val d = node.dir
+            if (grid[p + d] != '#') {
+                yield(MazeNode(p+d, d) to 1)
+            }
+            if (grid[p + d.left()] != '#') {
+                yield(MazeNode(p + d.left(), d.left()) to 1001)
+            }
+            if (grid[p + d.right()] != '#') {
+                yield(MazeNode(p + d.right(), d.right()) to 1001)
+            }
+        }
+    }
+    val isGoal = { node: MazeNode -> node.pos == finish }
+
+    return depthFirst(start, neighbors, bestScore, isGoal)
+        .flatMap { it.second }
+        .map { it.pos }
+        .toSet()
+        .size
 }
 
 fun Point.left() = Point(y, -x)
