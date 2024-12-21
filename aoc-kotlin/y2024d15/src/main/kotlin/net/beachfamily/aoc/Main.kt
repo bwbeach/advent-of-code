@@ -56,7 +56,7 @@ class State(
         if (moves != null) {
             val dir = instructionToDir(instr)
             // pick up all the things from their old locations, leaving them blank
-            for ((p, c) in moves) {
+            for ((p, _) in moves) {
                 contents[p] = '.'
             }
             // drop them in their new locations
