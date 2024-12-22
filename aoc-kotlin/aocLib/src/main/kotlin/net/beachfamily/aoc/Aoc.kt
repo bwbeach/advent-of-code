@@ -175,6 +175,17 @@ data class Grid<T>(
             }
         }
     }
+
+    override fun toString(): String =
+        buildString {
+            for (y in ymin..ymax) {
+                for (x in xmin..xmax) {
+                    append(data[Point(x, y)] ?: '.')
+                }
+                appendLine()
+            }
+            appendLine()
+        }
 }
 
 /**
