@@ -53,9 +53,8 @@ fun parse(s: String) : Sequence<Point> =
         .map { parsePoint(it) }
         .asSequence()
 
-fun parsePoint(s: String): Point {
-    val (x, y) = words(s.replace(",", " "))
-        .map { it.toInt() }
-    return Point(x, y)
-}
+fun parsePoint(s: String): Point =
+    words(s.replace(",", " "))
+        .map{ it.toInt() }
+        .let { (x, y) -> Point(x, y) }
 
