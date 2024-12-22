@@ -12,6 +12,8 @@ fun part1(s: String) : String =
     Computer.parse(s).run().map { it.toString() }.joinToString(",")
 
 fun part2(s: String) : Int {
+    val computer = Computer.parse(s)
+    printProgram(computer.program)
     return s.length
 }
 
@@ -117,5 +119,28 @@ class Computer(
 
     fun literalOperand(): BigInteger =
         program[pc+1].toBigInteger()
+}
+
+fun printProgram(program: List<Int>) {
+    val opcodes = listOf("adv", "bxl", "bst", "jnz", "bxc", "out", "bdv", "cdv")
+    val operandTypes = listOf("c", "l", "c", "l", "n", "c", "c", "c")
+    for (i in 0..< program.size step 2) {
+        val opcode = program[i]
+        val opcodeStr = opcodes[opcode]
+        val operand = program[i+1]
+        val operandStr = when(operandTypes[opcode]) {
+            "n" -> ""
+            "l" -> "$operand"
+            "c" -> when (operand) {
+                0, 1, 2, 3 -> "$operand"
+                4 -> "a"
+                5 -> "b"
+                6 -> "c"
+                else -> throw IllegalArgumentException("Unknown combo operand: $operand")
+            }
+            else -> throw IllegalArgumentException("Unknown operand type: ${operandTypes[opcode]}")
+        }
+        println("$i: $opcodeStr $operandStr")
+    }
 }
 
