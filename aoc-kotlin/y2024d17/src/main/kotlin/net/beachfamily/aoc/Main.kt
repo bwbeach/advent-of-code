@@ -11,10 +11,30 @@ fun main() {
 fun part1(s: String) : String =
     Computer.parse(s).run().map { it.toString() }.joinToString(",")
 
-fun part2(s: String) : Int {
+fun part2(s: String) : BigInteger {
     val computer = Computer.parse(s)
     printProgram(computer.program)
-    return s.length
+    var a = 0.toBigInteger()
+    for (n in computer.program.reversed()) {
+        a = findNext(computer, a * 8.toBigInteger(), n)
+    }
+    return a
+}
+
+fun findNext(computer: Computer, a: BigInteger, n: Int): BigInteger {
+    for (i in 0 ..< 8) {
+        val x = a + i.toBigInteger()
+        val c = Computer(
+            x,
+            computer.b,
+            computer.c,
+            computer.program
+        )
+        if (c.run().first() == n.toBigInteger()) {
+            return x
+        }
+    }
+    throw IllegalArgumentException("findNext failed for $a, $n")
 }
 
 class Computer(
@@ -53,57 +73,64 @@ class Computer(
         }
     }
 
-    fun run(): List<BigInteger> {
-        val result = mutableListOf<BigInteger>()
-        while (pc < program.size) {
-            require(0 <= pc)
-            when (program[pc]) {
-                0 -> {
-                    // adv
-                    val exp = comboOperand()
-                    require(exp < Int.MAX_VALUE.toBigInteger())
-                    a = a / 2.toBigInteger().pow(exp.toInt())
-                }
-                1 -> {
-                    // bxl
-                    b = b.xor(literalOperand())
-                }
-                2 -> {
-                    // bst
-                    b = comboOperand().mod(8.toBigInteger())
-                }
-                3 -> {
-                    // jnz
-                    if (a != 0.toBigInteger()) {
-                        pc = program[pc+1] - 2
+    fun run(): Sequence<BigInteger>  =
+        sequence {
+            while (pc < program.size) {
+                require(0 <= pc)
+                when (program[pc]) {
+                    0 -> {
+                        // adv
+                        val exp = comboOperand()
+                        require(exp < Int.MAX_VALUE.toBigInteger())
+                        a = a / 2.toBigInteger().pow(exp.toInt())
                     }
+
+                    1 -> {
+                        // bxl
+                        b = b.xor(literalOperand())
+                    }
+
+                    2 -> {
+                        // bst
+                        b = comboOperand().mod(8.toBigInteger())
+                    }
+
+                    3 -> {
+                        // jnz
+                        if (a != 0.toBigInteger()) {
+                            pc = program[pc + 1] - 2
+                        }
+                    }
+
+                    4 -> {
+                        // bxc
+                        b = b.xor(c)
+                    }
+
+                    5 -> {
+                        // out
+                        yield(comboOperand().mod(8.toBigInteger()))
+                    }
+
+                    6 -> {
+                        // bdv
+                        val exp = comboOperand()
+                        require(exp < Int.MAX_VALUE.toBigInteger())
+                        b = a / 2.toBigInteger().pow(exp.toInt())
+                    }
+
+                    7 -> {
+                        // cdv
+                        val exp = comboOperand()
+                        require(exp < Int.MAX_VALUE.toBigInteger())
+                        c = a / 2.toBigInteger().pow(exp.toInt())
+                    }
+
+                    else -> throw IllegalArgumentException("Unknown opcode: ${program[pc]}")
                 }
-                4 -> {
-                    // bxc
-                    b = b.xor(c)
-                }
-                5 -> {
-                    // out
-                    result.add(comboOperand().mod(8.toBigInteger()))
-                }
-                6 -> {
-                    // bdv
-                    val exp = comboOperand()
-                    require(exp < Int.MAX_VALUE.toBigInteger())
-                    b = a / 2.toBigInteger().pow(exp.toInt())
-                }
-                7 -> {
-                    // cdv
-                    val exp = comboOperand()
-                    require(exp < Int.MAX_VALUE.toBigInteger())
-                    c = a / 2.toBigInteger().pow(exp.toInt())
-                }
-                else -> throw IllegalArgumentException("Unknown opcode: ${program[pc]}")
+                pc += 2
             }
-            pc += 2
         }
-        return result.toList()
-    }
 
     fun comboOperand(): BigInteger =
         when (program[pc+1]) {
