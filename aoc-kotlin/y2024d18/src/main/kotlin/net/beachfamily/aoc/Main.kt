@@ -5,36 +5,41 @@ import kotlin.math.abs
 fun main() {
     val input = readInput("y2024d18")
     println(part1(input, 1024, 70, 70))
-    println(part2(input))
+    println(part2(input, 70, 70,))
 }
 
 fun part1(s: String, n: Int, w: Int, h: Int) : Int {
     val blocked = parse(s).take(n).toSet()
-    val dest = Point(w, h)
-    val inRange = { p: Point -> p.x in 0 .. w && p.y in 0 .. h }
-    val neighbors: (Point) -> Sequence<Pair<Point, Int>> =
-        { p ->
-            p.adjacentPoints().filter { it !in blocked && inRange(it) }.map { it to 1 }
-        }
-    val (cost, path) = aStar(
-        Point(0, 0),
-        { manhattan(it, dest) },
-        neighbors,
-        { it == dest }
-    ) ?: error("No path found")
-
-    println(makeGrid(blocked.map { it to '#' }.asSequence()))
-
-    val items = sequence {
-        yieldAll(blocked.map { it to '#' })
-        yieldAll(path.map { it to 'O' })
-    }
-    println(makeGrid(items).toString())
-    return cost
+    return findCost(blocked, w, h)!!
 }
 
-fun part2(s: String) : Int {
-    return s.length
+fun part2(s: String, w: Int, h: Int) : String {
+    val blocked = mutableSetOf<Point>()
+    for (p in parse(s)) {
+        blocked.add(p)
+        if (findCost(blocked, w, h) == null) {
+            return "${p.x},${p.y}"
+        }
+    }
+    throw IllegalArgumentException("No point blocks all paths")
+}
+
+fun findCost(blocked: Set<Point>, w: Int, h: Int): Int? {
+    val dest = Point(w, h)
+    val result = aStar(
+        Point(0, 0),
+        { manhattan(it, dest) },
+        neighborsFcn(blocked, w, h),
+        { it == dest }
+    )
+    return result?.first
+}
+
+fun neighborsFcn(blocked: Set<Point>, w: Int, h: Int): (Point) -> Sequence<Pair<Point, Int>> {
+    val inRange = { p: Point -> p.x in 0 .. w && p.y in 0 .. h }
+    return { p ->
+        p.adjacentPoints().filter { it !in blocked && inRange(it) }.map { it to 1 }
+    }
 }
 
 fun manhattan(a: Point, b: Point) : Int =
