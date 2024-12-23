@@ -1,5 +1,7 @@
 package net.beachfamily.aoc
 
+import java.math.BigInteger
+
 fun main() {
     val input = readInput("y2024d19")
     println(part1(input))
@@ -8,20 +10,23 @@ fun main() {
 
 fun part1(s: String) : Int {
     val problem = Problem.parse(s)
-    println(problem.towels)
     return problem.patterns
         .filter { problem.canMake(it) }
         .count()
 }
 
-fun part2(s: String) : Int {
-    return s.length
+fun part2(s: String) : BigInteger {
+    val problem = Problem.parse(s)
+    return problem.patterns
+        .map { problem.waysToMake(it) }
+        .fold(BigInteger.ZERO) { acc, n -> acc + n }
 }
 
 data class Problem(
     val towels: Set<String>,
     val patterns: List<String>,
-    val widestTowel: Int
+    val widestTowel: Int,
+    val waysToMakeMemo: MutableMap<String, BigInteger> = mutableMapOf()
 ) {
     companion object {
         fun parse(s: String): Problem {
@@ -45,5 +50,25 @@ data class Problem(
             }
         }
     }
-}
 
+    fun waysToMake(pattern: String): BigInteger {
+        if (pattern in waysToMakeMemo) {
+            return waysToMakeMemo[pattern]!!
+        }
+        else if (pattern.length == 0) {
+            return BigInteger.ONE
+        } else {
+            val result = (1 .. widestTowel)
+                .map { w ->
+                    if (w <= pattern.length && pattern.substring(0, w) in towels) {
+                        waysToMake(pattern.substring(w))
+                    } else {
+                        BigInteger.ZERO
+                    }
+                }
+                .fold(BigInteger.ZERO) { acc, n -> acc + n }
+            waysToMakeMemo[pattern] = result
+            return result
+        }
+    }
+}
