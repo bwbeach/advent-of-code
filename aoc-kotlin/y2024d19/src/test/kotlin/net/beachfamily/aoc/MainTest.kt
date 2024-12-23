@@ -5,9 +5,23 @@ import kotlin.test.assertEquals
 
 class MainTest {
 
+    fun testInput() =
+        """
+        r, wr, b, g, bwu, rb, gb, br
+
+        brwrr
+        bggr
+        gbbr
+        rrbgbr
+        ubwu
+        bwurrg
+        brgr
+        bbrgwb
+        """.trimIndent()
+
     @Test
     fun `examples from part1 problem statement`() {
-        assertEquals(4, part1("1122"))
+        assertEquals(6, part1(testInput()))
     }
 
     @Test
