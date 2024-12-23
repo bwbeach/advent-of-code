@@ -19,7 +19,7 @@ fun part2(s: String) : BigInteger {
     val problem = Problem.parse(s)
     return problem.patterns
         .map { problem.waysToMake(it) }
-        .fold(BigInteger.ZERO) { acc, n -> acc + n }
+        .sum()
 }
 
 data class Problem(
@@ -66,9 +66,14 @@ data class Problem(
                         BigInteger.ZERO
                     }
                 }
-                .fold(BigInteger.ZERO) { acc, n -> acc + n }
+                .sum()
             waysToMakeMemo[pattern] = result
             return result
         }
     }
+}
+
+private fun Iterable<BigInteger>.sum(): BigInteger =
+    this.fold(BigInteger.ZERO) { acc, n -> acc + n }
+
 }
