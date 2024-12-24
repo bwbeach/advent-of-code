@@ -30,7 +30,10 @@ fun solve(s: String, maxLength: Int, minValue: Int) : Int {
             benefit
         }
     }
-    return Cheat.allCheats(maze, maxLength).mapNotNull { cheatValue(it) }.filter { it >= minValue }.count()
+    return Cheat.allCheats(maze, maxLength)
+        .mapNotNull { cheatValue(it) }
+        .filter { it >= minValue }
+        .count()
 }
 
 data class Cheat(
@@ -38,24 +41,35 @@ data class Cheat(
     val p2: Point,
 ) {
     companion object {
+        /**
+         * Returns a sequence of all cheats up to maxLength.
+         */
         fun allCheats(maze: Grid<Char>, maxLength: Int): Sequence<Cheat> {
+            // For the purpose of making cheats, all locations in the grid are
+            // valid places to travel, including '#'.
             val neighbors: (Point) -> Sequence<Pair<Point, Int>> = { p ->
                 p.fourNeighbors()
                     .filter { maze.data.containsKey(it) }
                     .map { it to 1 }
             }
+
+            // Cheats must start and end on valid places to be in the maze, not walls.
             val startOrEndChars = setOf('.', 'S', 'E')
             val canBeStartOrEnd: (Point) -> Boolean = { maze[it] in startOrEndChars }
-            return maze.data.keys
-                .asSequence()
-                .filter(canBeStartOrEnd)
-                .flatMap { p0 ->
-                    dijkstra(p0, neighbors)
-                        .takeWhile { it.cost <= maxLength }
-                        .map { it.node }
-                        .filter(canBeStartOrEnd)
-                        .map { Cheat(p0, it) }
-                }
+
+            // The set of points that can start a cheat.
+            val startPoints = maze.data.keys.asSequence().filter(canBeStartOrEnd)
+
+            // The set of end points for a given start point.
+            val endPoints: (Point) -> Sequence<Point> = { p0 ->
+                dijkstra(p0, neighbors)
+                    .takeWhile { it.cost <= maxLength }
+                    .map { it.node }
+                    .filter(canBeStartOrEnd)
+            }
+
+            // Build the cheats
+            return startPoints.flatMap { p0 -> endPoints(p0).map { pn -> Cheat(p0, pn) }}
         }
     }
 }
