@@ -27,4 +27,10 @@ data class Point(val x: Int, val y: Int) : Comparable<Point> {
             yield(Point(x, y - 1))
             yield(Point(x, y + 1))
         }
+
+    fun fourNeighborsAndSelf(): Sequence<Point> =
+        sequence {
+            yield(this@Point)
+            yieldAll(fourNeighbors())
+        }
 }
