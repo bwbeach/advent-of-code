@@ -19,4 +19,12 @@ data class Point(val x: Int, val y: Int) : Comparable<Point> {
     override fun compareTo(other: Point): Int {
         return compareValuesBy(this, other, Point::x, Point::y)
     }
+
+    fun fourNeighbors(): Sequence<Point> =
+        sequence {
+            yield(Point(x - 1, y))
+            yield(Point(x + 1, y))
+            yield(Point(x, y - 1))
+            yield(Point(x, y + 1))
+        }
 }
