@@ -26,7 +26,7 @@ class MainTest {
 
     @Test
     fun `examples from part1 problem statement`() {
-        assertEquals(8, part1(testInput(), 12))
+        assertEquals(8, solve(testInput(), 2, 12))
     }
 
     @Test
