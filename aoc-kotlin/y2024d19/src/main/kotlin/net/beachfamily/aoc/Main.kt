@@ -75,5 +75,3 @@ data class Problem(
 
 private fun Iterable<BigInteger>.sum(): BigInteger =
     this.fold(BigInteger.ZERO) { acc, n -> acc + n }
-
-}
