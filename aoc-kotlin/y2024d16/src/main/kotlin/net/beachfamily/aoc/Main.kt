@@ -101,11 +101,3 @@ data class MazeNode(
     val pos: Point,
     val dir: Point,
 )
-
-fun <T> Grid<T>.find(needle: T): Point =
-    this.data
-        .entries
-        .filter { it.value == needle }
-        .first()
-        .key
-

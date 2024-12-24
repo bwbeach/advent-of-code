@@ -176,6 +176,13 @@ data class Grid<T>(
         }
     }
 
+    fun <T> find(needle: T): Point =
+        this.data
+            .entries
+            .filter { it.value == needle }
+            .first()
+            .key
+
     override fun toString(): String =
         buildString {
             for (y in ymin..ymax) {
