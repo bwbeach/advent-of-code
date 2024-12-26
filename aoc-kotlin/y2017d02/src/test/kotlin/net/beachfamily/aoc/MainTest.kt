@@ -19,5 +19,4 @@ class MainTest {
         assertEquals(3, part2Line("9 4 7 3"))
         assertEquals(2, part2Line("3 8 6 5"))
     }
-
 }
