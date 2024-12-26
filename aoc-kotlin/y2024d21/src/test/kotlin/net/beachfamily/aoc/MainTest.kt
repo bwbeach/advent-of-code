@@ -92,9 +92,10 @@ class MainTest {
     @Test
     fun firstEncodeExample() {
         val numPad = Keypad.parse(NUMBER_PAD)
+        val dirPad = Keypad.parse(DIR_PAD)
         assertEquals(
             "<A^A>^^AvvvA",
-            "029A".encode(numPad.charToPos, false)
+            shortestEncoding("029A", numPad, 0, dirPad)
         )
         assertEquals(
             "029A",
@@ -118,22 +119,5 @@ class MainTest {
     @Test
     fun `examples from part2 problem statement`() {
         assertEquals(4, part2("1212"))
-    }
-
-    @Test
-    fun experiment1() {
-        val dirPad = Keypad.parse(DIR_PAD)
-        val textH = "<<^A"
-        val textV = "^<<A"
-        println(textH)
-        println(textV)
-        val level1H = textH.encode(dirPad.charToPos, false)
-        val level1V = textV.encode(dirPad.charToPos, true)
-        println(level1H)
-        println(level1V)
-        val level2H = level1H.encode(dirPad.charToPos, false)
-        val level2V = level1V.encode(dirPad.charToPos, true)
-        println(level2H)
-        println(level2V)
     }
 }

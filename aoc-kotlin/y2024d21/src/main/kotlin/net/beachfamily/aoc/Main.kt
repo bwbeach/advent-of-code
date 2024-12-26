@@ -32,16 +32,14 @@ fun part1(s: String) : Int {
     val numberPad = Keypad.parse(NUMBER_PAD)
     val dirPad = Keypad.parse(DIR_PAD)
 
-    var result = 0
-    for (line in lines(s)) {
-        val encoded = shortestEncoding(line, numberPad, 2, dirPad)
-        println("$line\n$encoded")
-        require(encoded.decode(dirPad).decode(dirPad).decode(numberPad) == line)
-        val numericPart = line.substring(0, line.length - 1).toInt()
-        println("${encoded.length} * $numericPart")
-        result += numericPart * encoded.length
-    }
-    return result
+    return lines(s)
+        .map {
+            val encoded = shortestEncoding(it, numberPad, 2, dirPad)
+            require(encoded.decode(dirPad).decode(dirPad).decode(numberPad) == it)
+            val numericPart = it.substring(0, it.length - 1).toInt()
+            numericPart * encoded.length
+        }
+        .sum()
 }
 
 fun part2(s: String) : Int {
@@ -204,48 +202,6 @@ fun <T> crossProduct(listOfChoices: Sequence<Sequence<T>>): Sequence<Sequence<T>
                     )
                 }
             }
-        }
-    }
-
-/**
- * Encode robot commands to produce the given sequence on the given keypad.
- */
-fun String.encode(keypad: Map<Char, Point>, vFirst: Boolean = false): String =
-    buildString {
-        val inverted = keypad.entries.associateBy({ it.value }) { it.key }.toMap()
-        require(this@encode.last() == 'A')
-        var pos = keypad['A']!!
-        for (c in this@encode) {
-            val target = keypad[c]!!
-            val (dx, dy) = (target - pos)
-            val h =
-                if (dx < 0)
-                    "<".repeat(-dx)
-                else if (dx > 0)
-                    ">".repeat(dx)
-                else
-                    ""
-            val v =
-                if (dy < 0)
-                    "^".repeat(-dy)
-                else if (dy > 0)
-                    "v".repeat(dy)
-                else
-                    ""
-            if (vFirst && move(pos, v + h, inverted) == target) {
-                append(v)
-                append(h)
-            }
-            else if (move(pos, h + v, inverted) == target) {
-                append(h)
-                append(v)
-            }
-            else if (move(pos, v + h, inverted) == target) {
-                append(v)
-                append(h)
-            }
-            append("A")
-            pos = target
         }
     }
 
