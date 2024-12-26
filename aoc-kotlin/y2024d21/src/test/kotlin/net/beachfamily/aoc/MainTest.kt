@@ -92,7 +92,6 @@ class MainTest {
     @Test
     fun firstEncodeExample() {
         val numPad = Keypad.parse(NUMBER_PAD)
-        val dirPad = Keypad.parse(DIR_PAD)
         val solver = Solver.create()
         assertEquals(
             mapOf<String, Long>(

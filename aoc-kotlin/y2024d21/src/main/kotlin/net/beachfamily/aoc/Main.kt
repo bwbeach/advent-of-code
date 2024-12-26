@@ -36,7 +36,6 @@ fun part2(s: String) : Long = solve(s, 25)
 
 fun solve(s: String, depth: Int) : Long {
     val numberPad = Keypad.parse(NUMBER_PAD)
-    val dirPad = Keypad.parse(DIR_PAD)
     val solver = Solver.create()
 
     return lines(s)
@@ -49,14 +48,12 @@ fun solve(s: String, depth: Int) : Long {
 }
 
 class Solver(
-    private val numPad: Keypad,
     private val dirPad: Keypad,
     private val memos: MutableMap<Pair<String, Int>, Map<String, Long>>,
 ) {
     companion object {
         fun create(): Solver =
             Solver(
-                Keypad.parse(NUMBER_PAD),
                 Keypad.parse(DIR_PAD),
                 ConcurrentHashMap(),
             )
@@ -131,7 +128,6 @@ class Solver(
                     }
                     .minBy { it.combinedLength() }
             memos[key] = result
-            println("$key -> $result")
             return result
         }
     }
