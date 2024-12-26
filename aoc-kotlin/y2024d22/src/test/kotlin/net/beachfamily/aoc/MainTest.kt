@@ -34,6 +34,14 @@ class MainTest {
     }
 
     @Test
+    fun testPatternToPrice() {
+        assertEquals(7, patternToPrice(1)["-2 1 -1 3"])
+        assertEquals(7, patternToPrice(2)["-2 1 -1 3"])
+        assertEquals(null, patternToPrice(3)["-2 1 -1 3"])
+        assertEquals(9, patternToPrice(2024)["-2 1 -1 3"])
+    }
+
+    @Test
     fun `examples from part1 problem statement`() {
         assertEquals(37327623, part1(testInput()))
     }
