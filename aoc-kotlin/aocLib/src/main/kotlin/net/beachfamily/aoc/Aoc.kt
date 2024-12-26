@@ -100,6 +100,12 @@ fun <T> Sequence<T>.countOccurrences(): Map<T, Int> {
         acc
     }
 }
+fun <T> Sequence<T>.countOccurrencesLong(): Map<T, Long> {
+    return this.fold(mutableMapOf()) { acc, item ->
+        acc[item] = acc.getOrDefault(item, 0) + 1
+        acc
+    }
+}
 
 /**
  * Takes a Sequence of values and returns a Sequence of Pairs of adjacent values.

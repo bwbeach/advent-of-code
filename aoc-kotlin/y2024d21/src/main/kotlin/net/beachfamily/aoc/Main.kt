@@ -1,6 +1,5 @@
 package net.beachfamily.aoc
 
-import java.math.BigInteger
 import java.util.concurrent.ConcurrentHashMap
 
 const val NUMBER_PAD =
@@ -33,7 +32,7 @@ fun main() {
 
 fun part1(s: String) : Long = solve(s, 2)
 
-fun part2(s: String) : Long = 0 // solve(s, 25)
+fun part2(s: String) : Long = solve(s, 25)
 
 fun solve(s: String, depth: Int) : Long {
     val numberPad = Keypad.parse(NUMBER_PAD)
@@ -43,17 +42,16 @@ fun solve(s: String, depth: Int) : Long {
     return lines(s)
         .map {
             val encoded = solver.shortestEncoding(it, numberPad, depth)
-            require(encoded.decode(dirPad).decode(dirPad).decode(numberPad) == it)
             val numericPart = it.substring(0, it.length - 1).toInt()
-            numericPart.toLong() * encoded.length.toLong()
+            numericPart.toLong() * encoded.combinedLength()
         }
         .sum()
 }
 
 class Solver(
-    val numPad: Keypad,
-    val dirPad: Keypad,
-    val memos: MutableMap<Pair<String, Int>, String>,
+    private val numPad: Keypad,
+    private val dirPad: Keypad,
+    private val memos: MutableMap<Pair<String, Int>, Map<String, Long>>,
 ) {
     companion object {
         fun create(): Solver =
@@ -75,10 +73,33 @@ class Solver(
         keypad: Keypad,
         // How many more encodings?
         plusN: Int,
-    ): String =
+    ): Map<String, Long> =
         s.splitAfterA()
-            .map { shortestEncodingOfOne(it, keypad, plusN) }
-            .joinToString("")
+            .map { shortestEncodingOfAtomMemo(it, keypad, plusN) }
+            .combineCounts()
+
+    /**
+     * Memoized version of shortestEncodingOfOne
+     */
+    fun shortestEncodingOfAtomMemo(
+        // String to encode
+        s: String,
+        // Keypad to use
+        keypad: Keypad,
+        // How many more encodings?
+        plusN: Int,
+    ): Map<String, Long> {
+        require(s.indexOf('A') == s.length - 1)
+        val key = s to plusN
+        val memo = memos[key]
+        if (memo != null) {
+            return memo
+        } else {
+            val result = shortestEncodingOfAtom(s, keypad, plusN)
+            memos[key] = result
+            return result
+        }
+    }
 
     /**
      * Returns the shortest encoding for the given string with the given keypad,
@@ -86,35 +107,48 @@ class Solver(
      *
      * Requires that the string have a single "A" that appears at the end.
      */
-    fun shortestEncodingOfOne(
+    fun shortestEncodingOfAtom(
         // String to encode
         s: String,
         // Keypad to use
         keypad: Keypad,
         // How many more encodings?
         plusN: Int,
-    ): String {
+    ): Map<String, Long> {
         require(s.indexOf('A') == s.length - 1)
         val key = s to plusN
         val memo = memos[key]
         if (memo != null) {
             return memo
         } else {
-            val result =
+            val result: Map<String, Long> =
                 s.allEncodings(keypad)
                     .map {
                         if (plusN == 0)
-                            it
+                            it.splitAfterA().countOccurrencesLong()
                         else
                             shortestEncoding(it, dirPad, plusN - 1)
                     }
-                    .minBy { it.length }
+                    .minBy { it.combinedLength() }
             memos[key] = result
-            println("$s -> $result")
+            println("$key -> $result")
             return result
         }
     }
 }
+
+fun <T> Sequence<Map<T, Long>>.combineCounts(): Map<T, Long> {
+    val result: MutableMap<T, Long> = mutableMapOf()
+    for (map in this) {
+        for ((k, v) in map) {
+            result[k] = result.getOrDefault(k, 0L) + v
+        }
+    }
+    return result.toMap()
+}
+
+fun Map<String, Long>.combinedLength(): Long =
+    this.entries.map { it.key.length.toLong() * it.value }.sum()
 
 /**
  * A keypad that can be used to encode a string.

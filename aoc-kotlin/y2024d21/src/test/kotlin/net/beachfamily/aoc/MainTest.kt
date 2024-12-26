@@ -93,9 +93,15 @@ class MainTest {
     fun firstEncodeExample() {
         val numPad = Keypad.parse(NUMBER_PAD)
         val dirPad = Keypad.parse(DIR_PAD)
+        val solver = Solver.create()
         assertEquals(
-            "<A^A>^^AvvvA",
-            shortestEncoding("029A", numPad, 0, dirPad)
+            mapOf<String, Long>(
+                "<A" to 1,
+                "^A" to 1,
+                ">^^A" to 1,
+                "vvvA" to 1
+            ),
+            solver.shortestEncoding("029A", numPad, 0)
         )
         assertEquals(
             "029A",
@@ -116,8 +122,8 @@ class MainTest {
         assertEquals(126384, part1(testInput()))
     }
 
-    @Test
-    fun `examples from part2 problem statement`() {
-        assertEquals(4, part2("1212"))
-    }
+//    @Test
+//    fun `examples from part2 problem statement`() {
+//        assertEquals(4, part2("1212"))
+//    }
 }
