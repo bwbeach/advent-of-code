@@ -1,5 +1,8 @@
 package net.beachfamily.aoc
 
+import java.math.BigInteger
+import java.util.concurrent.ConcurrentHashMap
+
 const val NUMBER_PAD =
 """
 +---+---+---+
@@ -28,66 +31,90 @@ fun main() {
     println(part2(input))
 }
 
-fun part1(s: String) : Int {
+fun part1(s: String) : Long = solve(s, 2)
+
+fun part2(s: String) : Long = 0 // solve(s, 25)
+
+fun solve(s: String, depth: Int) : Long {
     val numberPad = Keypad.parse(NUMBER_PAD)
     val dirPad = Keypad.parse(DIR_PAD)
+    val solver = Solver.create()
 
     return lines(s)
         .map {
-            val encoded = shortestEncoding(it, numberPad, 2, dirPad)
+            val encoded = solver.shortestEncoding(it, numberPad, depth)
             require(encoded.decode(dirPad).decode(dirPad).decode(numberPad) == it)
             val numericPart = it.substring(0, it.length - 1).toInt()
-            numericPart * encoded.length
+            numericPart.toLong() * encoded.length.toLong()
         }
         .sum()
 }
 
-fun part2(s: String) : Int {
-    return s.length
-}
+class Solver(
+    val numPad: Keypad,
+    val dirPad: Keypad,
+    val memos: MutableMap<Pair<String, Int>, String>,
+) {
+    companion object {
+        fun create(): Solver =
+            Solver(
+                Keypad.parse(NUMBER_PAD),
+                Keypad.parse(DIR_PAD),
+                ConcurrentHashMap(),
+            )
+    }
 
-/**
- * Returns the shortest encoding for the given string with the given keypad,
- * plus n more directional keypads.
- */
-fun shortestEncoding(
-    // String to encode
-    s: String,
-    // Keypad to use
-    keypad: Keypad,
-    // How many more encodings?
-    plusN: Int,
-    // What keypad to use for more encodings?
-    plusKeypad: Keypad,
-): String =
-    s.splitAfterA()
-        .map { shortestEncodingOfOne(it, keypad, plusN, plusKeypad) }
-        .joinToString("")
+    /**
+     * Returns the shortest encoding for the given string with the given keypad,
+     * plus n more directional keypads.
+     */
+    fun shortestEncoding(
+        // String to encode
+        s: String,
+        // Keypad to use
+        keypad: Keypad,
+        // How many more encodings?
+        plusN: Int,
+    ): String =
+        s.splitAfterA()
+            .map { shortestEncodingOfOne(it, keypad, plusN) }
+            .joinToString("")
 
-/**
- * Returns the shortest encoding for the given string with the given keypad,
- * plus n more directional keypads.
- *
- * Requires that the string have a single "A" that appears at the end.
- */
-fun shortestEncodingOfOne(
-    // String to encode
-    s: String,
-    // Keypad to use
-    keypad: Keypad,
-    // How many more encodings?
-    plusN: Int,
-    // What keypad to use for more encodings?
-    plusKeypad: Keypad,
-): String =
-    s.allEncodings(keypad)
-        .map {
-            if (plusN == 0)
-                it
-            else
-                shortestEncoding(it, plusKeypad, plusN - 1, plusKeypad)
+    /**
+     * Returns the shortest encoding for the given string with the given keypad,
+     * plus n more directional keypads.
+     *
+     * Requires that the string have a single "A" that appears at the end.
+     */
+    fun shortestEncodingOfOne(
+        // String to encode
+        s: String,
+        // Keypad to use
+        keypad: Keypad,
+        // How many more encodings?
+        plusN: Int,
+    ): String {
+        require(s.indexOf('A') == s.length - 1)
+        val key = s to plusN
+        val memo = memos[key]
+        if (memo != null) {
+            return memo
+        } else {
+            val result =
+                s.allEncodings(keypad)
+                    .map {
+                        if (plusN == 0)
+                            it
+                        else
+                            shortestEncoding(it, dirPad, plusN - 1)
+                    }
+                    .minBy { it.length }
+            memos[key] = result
+            println("$s -> $result")
+            return result
         }
-        .minBy { it.length }
+    }
+}
 
 /**
  * A keypad that can be used to encode a string.
@@ -125,7 +152,7 @@ fun String.splitAfterA(): Sequence<String> =
         var start = 0
         while (start < s.length) {
             val aPos = s.indexOf('A', start)
-            require(0 < aPos)
+            require(0 <= aPos)
             yield(s.substring(start, aPos + 1))
             start = aPos + 1
         }
