@@ -2,7 +2,6 @@ package net.beachfamily.aoc
 
 import com.google.common.collect.HashMultimap
 import com.google.common.collect.Multimap
-import com.google.common.collect.TreeMultimap
 
 fun main() {
     val input = readInput("y2024d23")
@@ -17,8 +16,13 @@ fun part1(s: String) : Int {
         .count()
 }
 
-fun part2(s: String) : Int {
-    return s.length
+fun part2(s: String) : String {
+    val problem = parse(s)
+    return allFullyConnected(problem)
+        .maxBy { it.size }
+        .toList()
+        .sorted()
+        .joinToString(",")
 }
 
 data class Problem(
@@ -57,3 +61,23 @@ fun allTriples(problem: Problem): Sequence<List<String>> =
             }
         }
     }
+
+fun allFullyConnected(problem: Problem): Sequence<Set<String>> {
+    val computers = problem.computers.toList().sorted()
+    val connections = problem.connections
+
+    fun search(soFar: Set<String>, start: Int): Sequence<Set<String>> =
+        sequence {
+            if (3 <= soFar.size) {
+                yield(soFar)
+            }
+            for (i in (start..<computers.size)) {
+                val c = computers[i]
+                if (soFar.all { connections.containsEntry(it, c) }) {
+                    yieldAll(search(soFar + setOf(c), i + 1))
+                }
+            }
+        }
+
+    return search(setOf(), 0)
+}
