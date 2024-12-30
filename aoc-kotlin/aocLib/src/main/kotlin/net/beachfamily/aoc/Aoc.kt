@@ -145,6 +145,14 @@ fun <T> Sequence<T>.asPair(): Pair<T, T> {
 }
 
 /**
+ * Convert a List of two things into a Pair
+ */
+fun <T> List<T>.asPair(): Pair<T, T> {
+    require(this.size == 2)
+    return this[0] to this[1]
+}
+
+/**
  * A bounded grid of things.
  */
 data class Grid<T>(
