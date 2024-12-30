@@ -1,5 +1,9 @@
 package net.beachfamily.aoc
 
+import com.google.common.collect.HashMultimap
+import com.google.common.collect.Multimap
+import com.google.common.collect.TreeMultimap
+
 fun main() {
     val input = readInput("y2024d23")
     println(part1(input))
@@ -7,10 +11,49 @@ fun main() {
 }
 
 fun part1(s: String) : Int {
-    return s.length
+    val problem = parse(s)
+    return allTriples(problem)
+        .filter { it.any { c -> c.startsWith("t") } }
+        .count()
 }
 
 fun part2(s: String) : Int {
     return s.length
 }
 
+data class Problem(
+    // The names of all computers on the network.
+    val computers: Set<String>,
+    // Connections between computers.  There are two entries for each connection,
+    // one in each direction.
+    val connections: Multimap<String, String>,
+)
+
+fun parse(s: String): Problem {
+    val links = lines(s).map { it.split("-") }.map { Pair(it[0], it[1]) }
+    val connections: Multimap<String, String> = HashMultimap.create()
+    for ((a, b) in links) {
+        connections.put(a, b)
+        connections.put(b, a)
+    }
+    return Problem(connections.keys().toSet(), connections)
+}
+
+fun allTriples(problem: Problem): Sequence<List<String>> =
+    sequence {
+        val computers = problem.computers.toList().sorted()
+        for (i in 0 ..< computers.size) {
+            val a = computers[i]
+            for (j in i + 1 ..< computers.size) {
+                val b = computers[j]
+                if (problem.connections.containsEntry(a, b)) {
+                    for (k in j + 1 ..< computers.size) {
+                        val c = computers[k]
+                        if (problem.connections.containsEntry(b, c) && problem.connections.containsEntry(a, c)) {
+                            yield(listOf(a, b, c))
+                        }
+                    }
+                }
+            }
+        }
+    }
