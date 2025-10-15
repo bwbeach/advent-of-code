@@ -50,9 +50,7 @@ fun parse(s: String): Problem {
 fun <T, U> crossProduct(a: List<T>, b: List<U>): Sequence<Pair<T, U>> =
     sequence {
         for (x in a) {
-            println("XXX $x")
             for (y in b) {
-                println("YYY $y")
                 yield(Pair(x, y))
             }
         }
